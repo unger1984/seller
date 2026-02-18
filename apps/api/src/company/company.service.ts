@@ -1,7 +1,7 @@
 /** Сервис компаний */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CompanyRole } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateCompanyInput } from '@seller/shared-types';
 
 @Injectable()

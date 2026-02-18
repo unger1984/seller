@@ -13,10 +13,10 @@ import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { MatchCandidateListQuerySchema } from '@seller/shared-types';
-import { MatchingService } from './matching.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantGuard } from '../guards/tenant.guard';
-import type { JwtUser } from '../common/types';
+import { MatchingService } from './matching.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { TenantGuard } from '../guards/tenant.guard.js';
+import type { JwtUser } from '../common/types.js';
 import { Request } from 'express';
 
 const ConfirmMatchSchema = z.object({ variantId: z.string().min(1) });

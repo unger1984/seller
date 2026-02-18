@@ -1,8 +1,8 @@
 /** Модуль аккаунтов маркетплейсов */
 import { Module } from '@nestjs/common';
-import { MarketAccountController } from './market-account.controller';
-import { MarketAccountService } from './market-account.service';
-import { CredentialsCryptoService } from '../common/credentials-crypto.service';
+import { MarketAccountController } from './market-account.controller.js';
+import { MarketAccountService } from './market-account.service.js';
+import { CredentialsCryptoService } from '../common/credentials-crypto.service.js';
 
 @Module({
   controllers: [MarketAccountController],

@@ -17,7 +17,9 @@
       "options": {
         "outputPath": "dist/apps/worker",
         "main": "src/main.ts",
-        "tsConfig": "apps/worker/tsconfig.json"
+        "outputFileName": "src/main.js",
+        "tsConfig": "apps/worker/tsconfig.json",
+        "generatePackageJson": false
       }
     },
     "run": {

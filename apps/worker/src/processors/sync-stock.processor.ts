@@ -5,7 +5,7 @@
  */
 import type { Job } from 'bullmq';
 import { logger } from '@seller/shared';
-import type { SyncStockJobData } from '../queues';
+import type { SyncStockJobData } from '../queues.js';
 
 export async function processSyncStock(job: Job<SyncStockJobData>) {
   const { listingId, companyId } = job.data;

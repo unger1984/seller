@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Marketplace } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { CredentialsCryptoService } from '../common/credentials-crypto.service';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { CredentialsCryptoService } from '../common/credentials-crypto.service.js';
 import { sha256Hash } from '@seller/shared';
 import type {
   CreateMarketAccountInput,

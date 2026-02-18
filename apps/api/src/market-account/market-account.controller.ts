@@ -21,10 +21,10 @@ import type {
   CreateMarketAccountInput,
   UpdateMarketAccountCredentialsInput,
 } from '@seller/shared-types';
-import { MarketAccountService } from './market-account.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantGuard } from '../guards/tenant.guard';
-import type { JwtUser } from '../common/types';
+import { MarketAccountService } from './market-account.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { TenantGuard } from '../guards/tenant.guard.js';
+import type { JwtUser } from '../common/types.js';
 import { Request } from 'express';
 
 class CreateMarketAccountDto extends createZodDto(

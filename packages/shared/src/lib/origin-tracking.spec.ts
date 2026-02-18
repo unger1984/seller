@@ -6,7 +6,7 @@ import {
   shouldSkipStockUpdateOnImport,
   shouldSkipStockUpdateOnPush,
   type SyncOrigin,
-} from './origin-tracking';
+} from './origin-tracking.js';
 
 describe('shouldSkipStockUpdateOnImport', () => {
   it('lastStockOrigin null → не пропускать', () => {

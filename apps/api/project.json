@@ -18,7 +18,8 @@
         "outputPath": "dist/apps/api",
         "main": "src/main.ts",
         "outputFileName": "src/main.js",
-        "tsConfig": "apps/api/tsconfig.json"
+        "tsConfig": "apps/api/tsconfig.json",
+        "generatePackageJson": false
       },
       "configurations": {
         "production": {}

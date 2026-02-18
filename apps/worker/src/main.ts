@@ -1,16 +1,19 @@
 /**
  * BullMQ worker — обработка очередей sync.
  */
-import IORedis from 'ioredis';
+import { createRequire } from 'node:module';
 import { Worker } from 'bullmq';
+
+const require = createRequire(import.meta.url);
+const Redis = require('ioredis');
 import { logger } from '@seller/shared';
-import { QUEUE_NAMES, JOB_NAMES } from './queues';
-import { processImportCatalog } from './processors/import.processor';
-import { processPublishListing } from './processors/publish.processor';
-import { processSyncStock } from './processors/sync-stock.processor';
+import { QUEUE_NAMES, JOB_NAMES } from './queues.js';
+import { processImportCatalog } from './processors/import.processor.js';
+import { processPublishListing } from './processors/publish.processor.js';
+import { processSyncStock } from './processors/sync-stock.processor.js';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
-const connection = new IORedis(REDIS_URL, {
+const connection = new Redis(REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
@@ -37,6 +40,27 @@ worker.on('completed', (job) => {
 
 worker.on('failed', (job, err) => {
   logger.error(`[worker] ${job?.name} ${job?.id} failed:`, err);
+});
+
+let cleaningUp = false;
+
+async function cleanup() {
+  if (cleaningUp) return;
+  cleaningUp = true;
+  await worker.close();
+  await connection.quit();
+}
+
+process.on('SIGINT', async () => {
+  logger.info('SIGINT received, shutting down worker');
+  await cleanup();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM received, shutting down worker');
+  await cleanup();
+  process.exit(0);
 });
 
 logger.info('Worker started, listening for jobs');

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PaginationSchema } from './common.schema';
+import { PaginationSchema } from './common.schema.js';
 
 /** SyncPolicy */
 export const SyncPolicySchema = z.enum([

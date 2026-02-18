@@ -23,10 +23,10 @@ import type {
   UpdateListingPolicyInput,
   ListingListQuery,
 } from '@seller/shared-types';
-import { ListingService } from './listing.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantGuard } from '../guards/tenant.guard';
-import type { JwtUser } from '../common/types';
+import { ListingService } from './listing.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { TenantGuard } from '../guards/tenant.guard.js';
+import type { JwtUser } from '../common/types.js';
 import { Request } from 'express';
 
 class CreateListingDto extends createZodDto(

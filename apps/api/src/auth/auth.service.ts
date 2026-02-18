@@ -2,7 +2,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service.js';
 import type { LoginInput, RegisterInput } from '@seller/shared-types';
 
 const SALT_ROUNDS = 10;

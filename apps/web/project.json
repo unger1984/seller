@@ -20,9 +20,13 @@
     },
     "serve": {
       "executor": "@nx/vite:dev-server",
-      "options": {},
+      "options": {
+        "buildTarget": "web:build"
+      },
       "configurations": {
-        "production": {}
+        "production": {
+          "buildTarget": "web:build:production"
+        }
       }
     }
   }

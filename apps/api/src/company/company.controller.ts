@@ -13,8 +13,8 @@ import { createZodDto } from 'nestjs-zod';
 import type { z } from 'zod';
 import { CreateCompanySchema } from '@seller/shared-types';
 import type { CreateCompanyInput } from '@seller/shared-types';
-import { CompanyService } from './company.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { CompanyService } from './company.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { Request } from 'express';
 
 /** DTO создания компании — cast к zod из api для обхода TS2742 */

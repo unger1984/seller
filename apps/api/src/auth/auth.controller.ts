@@ -18,8 +18,8 @@ import {
   RegisterSchema,
 } from '@seller/shared-types';
 import type { LoginInput, RegisterInput } from '@seller/shared-types';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { AuthService } from './auth.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import { Request } from 'express';
 
 /** DTO входа — cast к zod из api для обхода TS2742 */

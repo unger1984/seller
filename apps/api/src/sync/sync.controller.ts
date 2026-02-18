@@ -14,10 +14,10 @@ import { createZodDto } from 'nestjs-zod';
 import type { z } from 'zod';
 import { ImportCatalogSchema } from '@seller/shared-types';
 import type { ImportCatalogInput } from '@seller/shared-types';
-import { SyncService } from './sync.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantGuard } from '../guards/tenant.guard';
-import type { JwtUser } from '../common/types';
+import { SyncService } from './sync.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { TenantGuard } from '../guards/tenant.guard.js';
+import type { JwtUser } from '../common/types.js';
 import { Request } from 'express';
 
 class ImportCatalogDto extends createZodDto(

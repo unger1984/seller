@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import {
   normalizeExternalRef,
   type ExternalRefType,
-} from './normalize-external-ref';
+} from './normalize-external-ref.js';
 
 const NUMERIC_TYPES: ExternalRefType[] = [
   'OZON_PRODUCT_ID',

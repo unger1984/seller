@@ -1,7 +1,7 @@
 /** Сервис синхронизации — постановка jobs, история (stub) */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { SyncQueueService } from './sync-queue.service';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { SyncQueueService } from './sync-queue.service.js';
 import type { ImportCatalogInput } from '@seller/shared-types';
 
 @Injectable()

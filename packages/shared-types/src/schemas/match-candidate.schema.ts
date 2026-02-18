@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PaginationSchema } from './common.schema';
+import { PaginationSchema } from './common.schema.js';
 
 /** ExternalRefType — OZON_* только для Ozon, WB_* только для WB */
 export const ExternalRefTypeSchema = z.enum([

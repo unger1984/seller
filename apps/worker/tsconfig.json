@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "commonjs",
+    "baseUrl": ".",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "../../dist/apps/worker",
     "rootDir": "src"
   },

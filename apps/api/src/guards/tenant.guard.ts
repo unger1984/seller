@@ -6,7 +6,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request } from 'express';
-import type { JwtUser } from '../common/types';
+import type { JwtUser } from '../common/types.js';
 
 @Injectable()
 export class TenantGuard implements CanActivate {

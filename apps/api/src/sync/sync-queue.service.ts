@@ -2,10 +2,13 @@
  * Сервис для постановки jobs в BullMQ.
  * Общие имена с worker через строки — shared контракт.
  */
+import { createRequire } from 'node:module';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
-import IORedis from 'ioredis';
+
+const require = createRequire(import.meta.url);
+const Redis = require('ioredis');
 import {
   QUEUE_NAMES,
   JOB_NAMES,
@@ -17,11 +20,11 @@ import {
 @Injectable()
 export class SyncQueueService implements OnModuleDestroy {
   private readonly queue: Queue;
-  private readonly redis: IORedis;
+  private readonly redis: InstanceType<typeof Redis>;
 
   constructor(private readonly config: ConfigService) {
     const url = this.config.get<string>('REDIS_URL', 'redis://localhost:6379');
-    this.redis = new IORedis(url);
+    this.redis = new Redis(url);
     this.queue = new Queue(QUEUE_NAMES.SYNC, {
       connection: this.redis,
     });

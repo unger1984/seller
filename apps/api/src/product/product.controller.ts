@@ -30,10 +30,10 @@ import type {
   UpdateVariantInput,
   AddBarcodeInput,
 } from '@seller/shared-types';
-import { ProductService } from './product.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { TenantGuard } from '../guards/tenant.guard';
-import type { JwtUser } from '../common/types';
+import { ProductService } from './product.service.js';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
+import { TenantGuard } from '../guards/tenant.guard.js';
+import type { JwtUser } from '../common/types.js';
 import { Request } from 'express';
 
 class CreateProductDto extends createZodDto(

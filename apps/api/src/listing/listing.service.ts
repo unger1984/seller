@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ListingStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { SyncQueueService } from '../sync/sync-queue.service';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { SyncQueueService } from '../sync/sync-queue.service.js';
 import type {
   CreateListingInput,
   UpdateListingPolicyInput,

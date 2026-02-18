@@ -1,7 +1,7 @@
 /** Модуль матчинга кандидатов */
 import { Module } from '@nestjs/common';
-import { MatchingController } from './matching.controller';
-import { MatchingService } from './matching.service';
+import { MatchingController } from './matching.controller.js';
+import { MatchingService } from './matching.service.js';
 
 @Module({
   controllers: [MatchingController],

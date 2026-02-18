@@ -4,7 +4,7 @@
  */
 import type { Job } from 'bullmq';
 import { logger } from '@seller/shared';
-import type { ImportCatalogJobData } from '../queues';
+import type { ImportCatalogJobData } from '../queues.js';
 
 export async function processImportCatalog(job: Job<ImportCatalogJobData>) {
   const { marketAccountId, companyId } = job.data;

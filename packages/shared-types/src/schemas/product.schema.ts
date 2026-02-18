@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MarketplaceStringIdSchema, PaginationSchema } from './common.schema';
+import { MarketplaceStringIdSchema, PaginationSchema } from './common.schema.js';
 
 /** Создание Product — master-карточка */
 export const CreateProductSchema = z.object({

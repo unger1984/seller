@@ -2,16 +2,17 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe, ZodSerializerInterceptor } from 'nestjs-zod';
-import { LoggerModule } from './logger/logger.module.js';
-import { ConfigModule } from './config/config.module.js';
-import { PrismaModule } from './prisma/prisma.module.js';
-import { AuthModule } from './auth/auth.module.js';
-import { CompanyModule } from './company/company.module.js';
-import { MarketAccountModule } from './market-account/market-account.module.js';
-import { ProductModule } from './product/product.module.js';
-import { ListingModule } from './listing/listing.module.js';
-import { MatchingModule } from './matching/matching.module.js';
-import { SyncModule } from './sync/sync.module.js';
+import { HttpLoggingInterceptor } from './shared/http-logging/index.js';
+import { LoggerModule } from './shared/logger/logger.module.js';
+import { ConfigModule } from './shared/config/config.module.js';
+import { PrismaModule } from './shared/prisma/prisma.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { CompanyModule } from './modules/company/company.module.js';
+import { MarketAccountModule } from './modules/market-account/market-account.module.js';
+import { ProductModule } from './modules/product/product.module.js';
+import { ListingModule } from './modules/listing/listing.module.js';
+import { MatchingModule } from './modules/matching/matching.module.js';
+import { SyncModule } from './modules/sync/sync.module.js';
 
 @Module({
   imports: [
@@ -30,6 +31,10 @@ import { SyncModule } from './sync/sync.module.js';
     {
       provide: APP_PIPE,
       useClass: ZodValidationPipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpLoggingInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,

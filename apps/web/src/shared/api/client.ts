@@ -1,5 +1,7 @@
-/** Базовый fetch-клиент к API */
-const API_BASE = '/api';
+/** Базовый fetch-клиент к API. VITE_API_URL — origin (http://localhost:3000), пусто — relative /api за proxy */
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
 
 interface RequestOptions extends RequestInit {
   token?: string | null;

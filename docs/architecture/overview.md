@@ -19,6 +19,11 @@
 - MatchingModule
 - SyncModule
 
+## API Structure (apps/api/src)
+
+- **modules/** — bounded context modules (Auth, Company, MarketAccount, Product, Listing, Matching, Sync)
+- **shared/** — config, logger, prisma, guards, common
+
 ## Диаграмма (упрощённая)
 
 ```

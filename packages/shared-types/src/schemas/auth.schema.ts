@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-/** Схема для входа пользователя */
+/** Схема для входа пользователя. Длина пароля не валидируется — только при создании. */
 export const LoginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string(),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;
 

@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { logger } from '@seller/shared';
 import { AppModule } from './app.module.js';
-import { LoggerService } from './logger/logger.service.js';
+import { LoggerService } from './shared/logger/logger.service.js';
 
 let appRef: { close: () => Promise<void> } | undefined;
 let cleaningUp = false;
@@ -34,6 +34,15 @@ async function bootstrap() {
   appRef = app;
   app.useLogger(app.get(LoggerService));
   app.setGlobalPrefix('api');
+
+  const raw = process.env.CORS_ORIGINS ?? '';
+  const corsOrigins = raw.split(',').map((o) => o.trim()).filter(Boolean);
+  if (corsOrigins.length > 0) {
+    app.enableCors({
+      origin: corsOrigins,
+      credentials: true,
+    });
+  }
 
   const config = new DocumentBuilder()
     .setTitle('Seller API')

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { LoginInput } from '@seller/shared-types';
 import type { AuthUser } from '../model/authStore';
 import { useAuthStore } from '../model/authStore';
+import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 
@@ -30,9 +31,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     const data: LoginInput = { email, password };
     try {
       setLoading(true);
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!res.ok) {

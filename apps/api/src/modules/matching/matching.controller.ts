@@ -1,0 +1,72 @@
+/** Контроллер матчинга кандидатов */
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { MatchCandidateListQuerySchema } from '@seller/shared-types';
+import { MatchingService } from './matching.service.js';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard.js';
+import { TenantGuard } from '../../shared/guards/tenant.guard.js';
+import type { JwtUser } from '../../shared/common/types.js';
+import { Request } from 'express';
+
+const ConfirmMatchSchema = z.object({ variantId: z.string().min(1) });
+class ConfirmMatchDto extends createZodDto(ConfirmMatchSchema) {}
+
+@ApiTags('matching')
+@Controller('companies/:companyId/match-candidates')
+@UseGuards(JwtAuthGuard, TenantGuard)
+export class MatchingController {
+  constructor(private readonly service: MatchingService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Кандидаты на сопоставление' })
+  async list(
+    @Param('companyId') _companyId: string,
+    @Query() query: z.infer<typeof MatchCandidateListQuerySchema>,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.list(companyId, query);
+  }
+
+  @Post(':id/confirm')
+  @ApiOperation({ summary: 'Подтвердить сопоставление' })
+  @ApiBody({ type: ConfirmMatchDto })
+  async confirm(
+    @Param('companyId') _companyId: string,
+    @Param('id') candidateId: string,
+    @Body() body: ConfirmMatchDto,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.confirm(
+      companyId,
+      candidateId,
+      (body as { variantId: string }).variantId
+    );
+  }
+
+  @Post(':id/reject')
+  @ApiOperation({ summary: 'Отклонить кандидата' })
+  async reject(
+    @Param('companyId') _companyId: string,
+    @Param('id') candidateId: string,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.reject(companyId, candidateId);
+  }
+}

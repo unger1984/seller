@@ -15,6 +15,7 @@ SaaS для управления товарами на Ozon и Wildberries. Mult
 - **Код:** JSDoc и комментарии к сложной логике — на русском
 - **Зависимости:** фиксированные версии без `^`, обновления через Renovate/Dependabot
 - **npm:** запрещены `--ignore-scripts` и `--legacy-peer-deps` (см. `.cursor/rules/npm-install.mdc`)
+- **nx:** вызывать через `npx nx` (см. `.cursor/rules/nx-npx.mdc`)
 
 ## Документация
 

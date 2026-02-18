@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/features/auth/model/authStore';
+import { apiFetch } from '@/shared/api';
 import { Providers } from './providers';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
@@ -13,9 +14,7 @@ function AppRoutes() {
     setHydrated();
     const stored = localStorage.getItem('seller_token');
     if (!stored) return;
-    fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${stored}` },
-    })
+    apiFetch('/auth/me', { token: stored })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.user) {

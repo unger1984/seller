@@ -1,0 +1,27 @@
+---
+description: nx must be invoked via npx to ensure correct version
+globs: "**/package.json"
+alwaysApply: true
+---
+
+# Nx Invocation
+
+## Requirement
+
+Always call nx through `npx`:
+
+```bash
+npx nx serve api
+npx nx run-many -t build
+npx nx graph
+```
+
+## Rationale
+
+- nx is a devDependency; `npx` ensures the project's pinned version is used
+- Avoids mismatch when nx is also installed globally
+- Consistent behavior across dev environments and CI
+
+## In npm Scripts
+
+Scripts in `package.json` already use `nx` directly; npm resolves it from `node_modules/.bin`. No change needed there.

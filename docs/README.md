@@ -21,6 +21,8 @@ npm run dev:web
 npm run dev:worker
 ```
 
+При прямом вызове nx используй `npx nx` (например, `npx nx serve api`).
+
 ## Структура документации
 
 - [Архитектура](./architecture/overview.md) — модули, bounded contexts, диаграммы

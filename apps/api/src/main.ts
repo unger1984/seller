@@ -2,7 +2,6 @@ import 'reflect-metadata';
 /** Точка входа NestJS API */
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import { LoggerService } from './logger/logger.service';
 
@@ -20,7 +19,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const openApiDoc = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, cleanupOpenApiDoc(openApiDoc));
+  SwaggerModule.setup('api/docs', app, openApiDoc);
 
   await app.listen(3000);
 }

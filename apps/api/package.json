@@ -2,8 +2,6 @@
   "name": "@seller/api",
   "version": "1.0.0",
   "dependencies": {
-    "bullmq": "5.0.0",
-    "ioredis": "5.4.0",
     "@nestjs/common": "11.0.2",
     "@nestjs/config": "4.0.0",
     "@nestjs/core": "11.0.2",
@@ -11,22 +9,25 @@
     "@nestjs/passport": "11.0.5",
     "@nestjs/platform-express": "11.0.2",
     "@nestjs/swagger": "11.0.0",
-    "nestjs-zod": "5.0.0",
-    "passport": "0.7.0",
+    "@prisma/adapter-pg": "^7.0.0",
+    "@seller/domain": "*",
+    "@seller/prisma-client": "*",
+    "@seller/shared": "*",
+    "@seller/shared-types": "*",
     "bcrypt": "5.1.1",
+    "bullmq": "5.0.0",
+    "ioredis": "5.4.0",
+    "nestjs-zod": "4.3.1",
+    "passport": "0.7.0",
     "passport-jwt": "4.0.0",
     "reflect-metadata": "0.2.0",
     "rxjs": "7.8.0",
-    "@seller/domain": "*",
-    "@seller/shared": "*",
-    "@seller/shared-types": "*",
-    "@seller/prisma-client": "*",
-    "zod": "3.23.0"
+    "zod": "3.23.8"
   },
   "devDependencies": {
+    "@nx/nest": "22.0.0",
     "@types/bcrypt": "5.0.2",
     "@types/express": "5.0.0",
-    "@types/passport-jwt": "4.0.0",
-    "@nx/nest": "22.0.0"
+    "@types/passport-jwt": "4.0.0"
   }
 }

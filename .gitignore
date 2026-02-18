@@ -1,5 +1,19 @@
 node_modules
 
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.vscode
+.idea
+
 # Credentials & secrets
 .env
 .env.*
@@ -18,3 +32,14 @@ tmp
 coverage
 .eslintcache
 *.tsbuildinfo
+
+# Logs & debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+*.swp
+*.swo
+*~

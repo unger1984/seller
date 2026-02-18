@@ -51,7 +51,7 @@ export class MatchingController {
   ) {
     const companyId = req.user?.activeCompanyId;
     if (!companyId) throw new Error('Active company not set');
-    return this.service.confirm(companyId, candidateId, body.variantId);
+    return this.service.confirm(companyId, candidateId, (body as { variantId: string }).variantId);
   }
 
   @Post(':id/reject')

@@ -7,7 +7,7 @@
     "tooling/*"
   ],
   "scripts": {
-    "build": "nx run-many -t build --projects=api,web,worker",
+    "build": "nx run-many -t build --projects=shared,shared-types,domain,api,web,worker",
     "build:api": "tsc -p apps/api",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "build:worker": "tsc -p apps/worker",
@@ -36,7 +36,10 @@
     "vitest": "^3.2.4"
   },
   "overrides": {
-    "zod": "3.23.0",
     "jest-resolve": "29.2.0"
+  },
+  "dependencies": {
+    "nestjs-zod": "4.3.1",
+    "zod": "3.23.8"
   }
 }

@@ -17,6 +17,7 @@
       "options": {
         "outputPath": "dist/apps/api",
         "main": "src/main.ts",
+        "outputFileName": "src/main.js",
         "tsConfig": "apps/api/tsconfig.json"
       },
       "configurations": {

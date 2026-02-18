@@ -1,0 +1,24 @@
+---
+description: Frontend FSD — app, pages, features, entities, shared; Zustand; Russian comments
+globs: apps/web/**/
+alwaysApply: false
+---
+
+# Frontend FSD
+
+## Simplified FSD Structure
+
+- `app/` — providers, router, root layout
+- `pages/` — route-level pages
+- `features/` — features with model (Zustand stores) and ui
+- `entities/` — domain entities UI
+- `shared/` — UI components, api client, lib
+
+## State Management
+
+- Zustand for global state
+- Feature stores in `features/<name>/model/`
+
+## Code Style
+
+- JSDoc and comments in Russian for complex logic

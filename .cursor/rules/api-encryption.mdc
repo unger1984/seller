@@ -1,0 +1,20 @@
+---
+description: API keys storage — libsodium/envelope, not hash, rotation
+globs: apps/api/**/
+alwaysApply: false
+---
+
+# API Keys Encryption
+
+## Storage
+
+- `credentialsEncrypted` — string (base64/hex), not JSON; format: `version:nonce:ciphertext`
+- `credentialsVersion` — Int, for format/key migrations
+- Per marketplace: Ozon `{ clientId, apiKey }`, WB `{ apiKey }`
+- Use libsodium or envelope encryption; master key from env/Vault
+- **Not hash** — keys must be decrypted for API calls
+
+## Optional
+
+- `credentialsHash` — for deduplication
+- On read: decrypt, pass to marketplace client

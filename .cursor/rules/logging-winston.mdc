@@ -1,0 +1,35 @@
+---
+description: Logging via Winston, no console.log
+globs: apps/api/**/*.ts, apps/worker/**/*.ts, packages/shared/**/*.ts
+alwaysApply: false
+---
+
+# Logging
+
+## Winston Only
+
+- Use `logger` from `@seller/shared` for all logging
+- **No** `console.log`, `console.error`, `console.warn`, `console.debug` — banned in backend code
+
+## Usage
+
+```typescript
+// ✅ GOOD
+import { logger } from '@seller/shared';
+
+logger.info('Message');
+logger.error('Failed', error);
+logger.warn('Deprecated', { id });
+logger.debug('Debug data', obj);
+```
+
+```typescript
+// ❌ BAD
+console.log('message');
+console.error('error', err);
+```
+
+## NestJS API
+
+- Inject `LoggerService` in services/controllers for Nest-aware context
+- Nest bootstrap uses it automatically; internal Nest logs go through Winston too

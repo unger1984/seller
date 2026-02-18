@@ -1,0 +1,20 @@
+---
+description: Mandatory tests — matching, origin tracking
+globs: "**/*.spec.ts"
+alwaysApply: false
+---
+
+# Minimum Tests (Required for MVP)
+
+## Matching
+
+- barcode → Variant (VariantBarcode)
+- vendorCode → Variant
+- Priorities
+- Conflict when multiple variants share same barcode
+- **externalRef normalization:** "007" / "7" / " 7 " → one key; "7.0", "-7", "7e3", "" → 400
+
+## Origin Tracking
+
+- On import from marketplace: do not overwrite master if `lastStockOrigin` already from that marketplace
+- On push: avoid cycles (hash comparison, skip echo)

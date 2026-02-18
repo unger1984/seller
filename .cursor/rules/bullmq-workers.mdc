@@ -1,0 +1,23 @@
+---
+description: BullMQ workers — job naming, idempotency, rate limit, backoff
+globs: apps/worker/**/*.ts
+alwaysApply: false
+---
+
+# BullMQ Workers
+
+## Job Naming
+
+- Use explicit job names; avoid generic names
+
+## Idempotency
+
+- Use `IdempotencyKey` table for operations that must not run twice
+- Cron job: cleanup expired keys (`WHERE expiresAt < now()`)
+
+## Rate Limit and Backoff
+
+- Respect marketplace API rate limits
+- Implement exponential backoff on rate-limit responses
+- Concurrency: one queue + Redis semaphore per `marketAccountId` in processor
+- Alternative: Queue per marketAccount (higher cost, dynamic queues)

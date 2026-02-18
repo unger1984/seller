@@ -1,0 +1,9 @@
+# Артефакты сборки и кэш
+node_modules
+dist
+.nx
+*.min.js
+package-lock.json
+
+# Генерируемые файлы
+packages/prisma-client/node_modules/.prisma

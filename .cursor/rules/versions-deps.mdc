@@ -1,0 +1,13 @@
+---
+description: Fixed dependency versions without caret; Renovate/Dependabot
+globs: "**/package.json"
+alwaysApply: false
+---
+
+# Dependency Versions
+
+## Rule
+
+- Critical packages: **fixed versions without `^`** in package.json
+- Updates via Renovate or Dependabot (PR with review before merge)
+- Do not rely on package-lock.json as sole stabilizer

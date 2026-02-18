@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: seller-stage
+  labels:
+    app.kubernetes.io/name: seller
+    app.kubernetes.io/part-of: seller-stage

@@ -1,0 +1,42 @@
+{
+  "name": "seller",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tooling/*"
+  ],
+  "scripts": {
+    "build": "nx run-many -t build --projects=api,web,worker",
+    "build:api": "tsc -p apps/api",
+    "build:web": "vite build --config apps/web/vite.config.ts",
+    "build:worker": "tsc -p apps/worker",
+    "dev:api": "nx serve api",
+    "dev:web": "nx serve web",
+    "dev:worker": "nx run worker:run",
+    "dev:api:stage": "APP_ENV=stage nx serve api",
+    "dev:worker:stage": "dotenv -e .env.stage -- nx run worker:run",
+    "dev:stage": "APP_ENV=stage nx serve api",
+    "lint": "nx run-many -t lint",
+    "format": "prettier --write \"**/*.{ts,tsx,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",
+    "db:migrate": "cd packages/prisma-client && prisma migrate dev",
+    "db:migrate:stage": "dotenv -e .env.stage -- npm run db:migrate",
+    "db:studio": "cd packages/prisma-client && prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "dotenv-cli": "7.4.2",
+    "nx": "22.0.0",
+    "prettier": "3.4.0",
+    "typescript": "5.6.3",
+    "typescript-eslint": "^8.0.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "zod": "3.23.0",
+    "jest-resolve": "29.2.0"
+  }
+}

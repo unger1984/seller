@@ -1,0 +1,9 @@
+{
+  "name": "@seller/api-contracts",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@seller/shared-types": "*"
+  }
+}

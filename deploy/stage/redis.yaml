@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seller-redis-pvc
+  namespace: seller-stage
+  labels:
+    app: seller-redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-redis
+  namespace: seller-stage
+  labels:
+    app: seller-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-redis
+  template:
+    metadata:
+      labels:
+        app: seller-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          args:
+            - "--appendonly"
+            - "yes"
+          ports:
+            - containerPort: 6379
+              name: redis
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: seller-redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seller-redis
+  namespace: seller-stage
+  labels:
+    app: seller-redis
+spec:
+  type: NodePort
+  ports:
+    - port: 6379
+      targetPort: 6379
+      nodePort: 30379
+      name: redis
+  selector:
+    app: seller-redis

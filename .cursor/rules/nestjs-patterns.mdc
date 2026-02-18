@@ -1,0 +1,31 @@
+---
+description: NestJS patterns — Modules, DI, Guards, exception filters
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# NestJS Patterns
+
+## Modules
+
+- Use `@Module()` with explicit imports/exports
+- Keep modules focused; avoid god-modules
+- Feature modules import only what they need
+
+## Dependency Injection
+
+- Inject via constructor; prefer `@Injectable()` services
+- Use `forRoot()` / `forFeature()` for ConfigModule, database modules
+- Avoid circular dependencies — extract shared code to separate modules
+
+## Guards
+
+- `JwtAuthGuard` — protect routes that require auth
+- `TenantGuard` — compare `param.companyId` with `activeCompanyId` from JWT; return 403 on mismatch
+- Guards run before handlers; do not pass `param.companyId` into services — always use `activeCompanyId` from JWT
+
+## Exception Filters
+
+- Use NestJS built-in exceptions (e.g. `UnauthorizedException`, `ForbiddenException`)
+- Custom filters for consistent error response format
+- 403 for tenant mismatch; 401 for auth failures

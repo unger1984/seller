@@ -1,0 +1,13 @@
+---
+description: JSDoc and comments in Russian in code
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Russian Comments in Code
+
+## Requirement
+
+- JSDoc for functions/classes — in Russian
+- Complex logic — explanatory comments in Russian
+- Format: `/** Описание на русском */`

@@ -1,0 +1,50 @@
+---
+description: Disallow @ts-nocheck, @ts-ignore and similar TypeScript escape hatches
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# No TypeScript Escape Hatches
+
+## Prohibited
+
+- `// @ts-nocheck` — disables type checking for the whole file
+- `// @ts-ignore` — skips the next line
+
+Avoid `// @ts-expect-error`; use only when documenting an expected type error (e.g. in type tests) with a short comment.
+
+## Why
+
+These directives hide type errors instead of fixing them. They undermine type safety and make refactoring risky. Missing types are bugs waiting to happen.
+
+## Instead Of
+
+1. **Add proper types** — use `unknown`, generics, or explicit interfaces
+2. **Use type assertions** — `as Type` when you have runtime guarantees
+3. **Narrow types** — type guards, `in` operator, `instanceof`
+4. **Declare ambient modules** — for untyped external libs: `.d.ts` files
+5. **Fix the underlying issue** — don't suppress, resolve
+6. **If truly unavoidable** (e.g. type tests) — use `@ts-expect-error` with a short comment; never use `@ts-ignore`
+
+## Example
+
+```typescript
+// ❌ BAD
+// @ts-nocheck
+import { something } from 'untyped-lib';
+
+// @ts-ignore
+const x = riskyOperation();
+
+// ✅ GOOD
+// Create packages/.../types/untyped-lib.d.ts:
+declare module 'untyped-lib' {
+  export function something(arg: string): unknown;
+}
+
+// Or narrow and assert when you know the runtime shape:
+const result = riskyOperation();
+if (typeof result === 'object' && result !== null && 'id' in result) {
+  const x = result as { id: string };
+}
+```

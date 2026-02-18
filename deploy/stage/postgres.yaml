@@ -1,0 +1,87 @@
+# ConfigMap: non-secret Postgres config
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seller-postgres-config
+  namespace: seller-stage
+  labels:
+    app: seller-postgres
+data:
+  POSTGRES_USER: seller
+  POSTGRES_DB: seller
+---
+# Secret не в репо — создать вручную: kubectl create secret generic seller-postgres-secret --from-literal=POSTGRES_PASSWORD=seller -n seller-stage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seller-postgres-pvc
+  namespace: seller-stage
+  labels:
+    app: seller-postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: local-path
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-postgres
+  namespace: seller-stage
+  labels:
+    app: seller-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-postgres
+  template:
+    metadata:
+      labels:
+        app: seller-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - configMapRef:
+                name: seller-postgres-config
+            - secretRef:
+                name: seller-postgres-secret
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: seller-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seller-postgres
+  namespace: seller-stage
+  labels:
+    app: seller-postgres
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30032
+      name: postgres
+  selector:
+    app: seller-postgres

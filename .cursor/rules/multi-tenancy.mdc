@@ -1,0 +1,26 @@
+---
+description: Multi-tenancy — TenantGuard, companyId isolation, ADR 0015
+globs: apps/api/**/
+alwaysApply: false
+---
+
+# Multi-Tenancy
+
+## TenantGuard
+
+- Compare `req.params.companyId` with `activeCompanyId` from JWT
+- Return 403 if they do not match
+- **Never** pass `param.companyId` into services — always use `activeCompanyId` from context/JWT
+
+## companyId Isolation
+
+- All Prisma queries include `where: { companyId }` = `activeCompanyId` from JWT
+- Never accept `companyId` from request body; derive from relations
+
+## Variant, VariantBarcode, Listing
+
+- `companyId` must come from relation:
+  - Variant: `companyId = product.companyId`
+  - VariantBarcode: `companyId = variant.companyId`
+  - Listing: `companyId = variant.companyId`; validate `variant.companyId === marketAccount.companyId`
+- Create/update only inside transactions that enforce these invariants (ADR 0015)

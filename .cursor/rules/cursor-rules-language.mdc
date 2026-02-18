@@ -1,0 +1,29 @@
+---
+description: Cursor rules must be written in English
+globs: .cursor/rules/**/*.mdc
+alwaysApply: false
+---
+
+# Cursor Rules — Language
+
+## Requirement
+
+All Cursor rules (`.cursor/rules/*.mdc`) must be written in **English**.
+
+## Scope
+
+- **Rule content** — sections, explanations, examples
+- **Frontmatter** — `description` field
+- **Code comments** inside rule examples (when they illustrate the rule itself)
+
+## Why
+
+- Rules are shared across teams and tools; English is the common technical language
+- AI tooling and rule pickers work better with consistent language
+- Easier to integrate with external docs and open-source conventions
+
+## When Creating or Editing Rules
+
+1. Write all new rules in English
+2. When updating existing rules, keep or convert content to English
+3. Exception: examples that demonstrate localized UI (e.g. Russian strings in app code) — the rule text stays in English; the example can show the actual localized value

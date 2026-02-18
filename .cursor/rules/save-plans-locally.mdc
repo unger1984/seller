@@ -1,0 +1,29 @@
+---
+description: When creating plans, save them in the project's local folder, not in the global one
+alwaysApply: false
+---
+
+# Rule: Saving Plans Locally
+
+## Requirement
+
+When creating a plan via CreatePlan, always specify the path to the project's local folder `.cursor/plans/`, not the global Cursor folder.
+
+## Why This Matters
+
+- Plans stay in the repository and are available to the whole team
+- Planning history is preserved alongside the code
+- Plans can be committed to git to track architectural decisions
+
+## How to Fix
+
+CreatePlan saves to the global folder by default. After creating a plan, always move it to the project:
+
+- ❌ `/Users/user/.cursor/plans/plan.md` (global folder)
+- ✅ `/Users/user/project/.cursor/plans/plan.md` (project local folder)
+
+## Actions After CreatePlan
+
+1. Read the created plan from the global folder
+2. Write it to `<workspace>/.cursor/plans/<plan_name>.plan.md`
+3. Remove from the global folder (optional)

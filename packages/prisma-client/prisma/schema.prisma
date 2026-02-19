@@ -88,6 +88,7 @@ model User {
   email           String          @unique
   passwordHash    String          @map("password_hash")
   name            String?
+  isActive        Boolean         @default(false) @map("is_active")
   createdAt       DateTime        @default(now()) @map("created_at")
   companyMembers  CompanyMember[]
   @@map("users")

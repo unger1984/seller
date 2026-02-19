@@ -1,5 +1,11 @@
 /** Сервис аутентификации — регистрация, вход, JWT */
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
@@ -17,14 +23,24 @@ export class AuthService {
   /** Регистрация пользователя (без компании) */
   async register(data: RegisterInput) {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
-    const user = await this.prisma.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        name: data.name,
-      },
-    });
-    return this.toUserResponse(user);
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          email: data.email,
+          passwordHash,
+          name: data.name,
+        },
+      });
+      return this.toUserResponse(user);
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        throw new ConflictException('Email already registered');
+      }
+      throw err;
+    }
   }
 
   /** Вход: проверка пароля, выдача JWT. companyId — для active company в токене */
@@ -42,6 +58,9 @@ export class AuthService {
     const ok = await bcrypt.compare(data.password, user.passwordHash);
     if (!ok) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenException('Account not activated');
     }
     const activeCompanyId = this.resolveActiveCompany(user, companyId);
     const accessToken = this.jwt.sign({
@@ -86,6 +105,9 @@ export class AuthService {
     });
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+    if (!user.isActive) {
+      throw new ForbiddenException('Account not activated');
     }
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,

@@ -1,56 +1,51 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { LoginInput } from '@seller/shared-types';
-import type { AuthUser } from '../model/authStore';
-import { useAuthStore } from '../model/authStore';
+import type { RegisterInput } from '@seller/shared-types';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 
-interface LoginFormProps {
-  /** Callback при успешном входе (опционально, по умолчанию — редирект на /) */
-  onSuccess?: () => void;
-}
-
-/** Форма входа — email + пароль */
-export function LoginForm({ onSuccess }: LoginFormProps) {
+/** Форма регистрации — email, пароль, имя */
+export function RegisterForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const setAuth = useAuthStore((s) => s.setAuth);
-
-  const handleSuccess = () => {
-    onSuccess?.() ?? navigate('/', { replace: true });
-  };
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const data: LoginInput = { email, password };
+    const data: RegisterInput = { email, password, name };
     try {
       setLoading(true);
-      const res = await apiFetch('/auth/login', {
+      const res = await apiFetch('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.message ?? 'Ошибка входа');
+        throw new Error(body.message ?? 'Ошибка регистрации');
       }
-      const json = (await res.json()) as {
-        user: AuthUser;
-        accessToken: string;
-      };
-      setAuth(json.user, json.accessToken);
-      handleSuccess();
+      setSuccess(true);
+      setTimeout(() => navigate('/login', { replace: true }), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="text-green-600 text-sm max-w-sm">
+        Вы успешно зарегистрированы. Дождитесь активации аккаунта.
+        <p className="mt-2 text-gray-600">Перенаправление на вход...</p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
@@ -68,11 +63,21 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-        autoComplete="current-password"
+        minLength={8}
+        autoComplete="new-password"
+      />
+      <Input
+        type="text"
+        label="Имя"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+        minLength={1}
+        autoComplete="name"
       />
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <Button type="submit" disabled={loading}>
-        {loading ? 'Вход...' : 'Войти'}
+        {loading ? 'Регистрация...' : 'Зарегистрироваться'}
       </Button>
     </form>
   );

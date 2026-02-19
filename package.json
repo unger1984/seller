@@ -18,6 +18,7 @@
     "dev:api:stage": "APP_ENV=stage nx serve api",
     "dev:worker:stage": "dotenv -e .env.stage -- nx run worker:run",
     "dev:stage": "APP_ENV=stage nx serve api",
+    "dev:stage:all": "APP_ENV=stage dotenv -e .env.stage -- nx run-many -t serve -t run -p api,worker",
     "lint": "nx run-many -t lint",
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",

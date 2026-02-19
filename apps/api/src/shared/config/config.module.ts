@@ -1,16 +1,10 @@
-/** Конфигурация приложения */
-import { Module } from '@nestjs/common';
-import { ConfigModule as NestConfigModule } from '@nestjs/config';
+/** Конфигурация приложения — типизированный ConfigService */
+import { Global, Module } from '@nestjs/common';
+import { ConfigService } from './config.service.js';
 
+@Global()
 @Module({
-  imports: [
-    NestConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [
-        ...(process.env.APP_ENV === 'stage' ? ['.env.stage'] : []),
-        '.env',
-      ],
-    }) as never,
-  ],
+  providers: [ConfigService],
+  exports: [ConfigService],
 })
 export class ConfigModule {}

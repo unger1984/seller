@@ -1,0 +1,21 @@
+---
+description: No console.log/error/warn/debug — use proper logging or remove
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# No console
+
+## Requirement
+
+`console.log`, `console.error`, `console.warn`, `console.debug` are **forbidden** in application code.
+
+## Alternatives
+
+- **Backend (api, worker, shared):** Use `createLogger(label)` from `@seller/shared` — see [logging-winston.mdc](.cursor/rules/logging-winston.mdc)
+- **Frontend (web):** Remove debug logs; for user-facing errors use toasts, error boundaries, or UI state
+
+## Enforcement
+
+- ESLint rule `no-console: error` applies to all `.ts` and `.tsx` files
+- Do not add `eslint-disable-next-line no-console` — fix the code instead

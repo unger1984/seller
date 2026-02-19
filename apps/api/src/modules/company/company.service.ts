@@ -1,6 +1,10 @@
 /** Сервис компаний */
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CompanyRole } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CompanyRole, Prisma } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import type { CreateCompanyInput } from '@seller/shared-types';
 
@@ -24,18 +28,30 @@ export class CompanyService {
 
   /** Создать компанию и добавить user как OWNER */
   async create(userId: string, data: CreateCompanyInput) {
-    const company = await this.prisma.company.create({
-      data: {
-        name: data.name,
-        members: {
-          create: {
-            userId,
-            role: CompanyRole.OWNER,
+    try {
+      const company = await this.prisma.company.create({
+        data: {
+          name: data.name,
+          members: {
+            create: {
+              userId,
+              role: CompanyRole.OWNER,
+            },
           },
         },
-      },
-    });
-    return company;
+      });
+      return company;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Компания с таким названием уже существует'
+        );
+      }
+      throw err;
+    }
   }
 
   /** Детали компании — только если user member */

@@ -1,15 +1,21 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { apiFetch } from '@/shared/api';
 import { Providers } from './providers';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { RegisterPage } from '@/pages/register/RegisterPage';
+import { VerifyEmailPage } from '@/pages/verify-email/VerifyEmailPage';
+import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/reset-password/ResetPasswordPage';
+import { CreateCompanyPage } from '@/pages/onboarding/CreateCompanyPage';
+import { SelectCompanyPage } from '@/pages/onboarding/SelectCompanyPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 
 /** Корневой компонент: провайдеры + роутинг */
 function AppRoutes() {
-  const { user, token, hydrated, setHydrated } = useAuthStore();
+  const navigate = useNavigate();
+  const { user, token, hydrated, setAuth, setHydrated } = useAuthStore();
 
   useEffect(() => {
     const stored = localStorage.getItem('seller_token');
@@ -25,18 +31,32 @@ function AppRoutes() {
             {
               id: data.id,
               email: data.email,
-              name: data.name ?? null,
               activeCompanyId: data.activeCompanyId ?? null,
             },
             stored
           );
+          if (data.requiresCompany) {
+            navigate('/onboarding/company', { replace: true });
+            return;
+          }
+          if (
+            (data.memberships?.length ?? 0) > 1 &&
+            !data.activeCompanyId
+          ) {
+            navigate('/onboarding/select-company', { replace: true });
+            return;
+          }
+          if ((data.memberships?.length ?? 0) === 1 && !data.activeCompanyId) {
+            navigate('/', { replace: true });
+            return;
+          }
         } else {
           localStorage.removeItem('seller_token');
         }
       })
       .catch(() => localStorage.removeItem('seller_token'))
       .finally(() => setHydrated());
-  }, [setHydrated]);
+  }, [navigate, setAuth, setHydrated]);
 
   if (!hydrated) {
     return (
@@ -50,10 +70,37 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route
+        path="/onboarding/company"
+        element={
+          user && token ? (
+            <CreateCompanyPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/onboarding/select-company"
+        element={
+          user && token ? (
+            <SelectCompanyPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
       <Route
         path="/"
         element={
-          user && token ? <DashboardPage /> : <Navigate to="/login" replace />
+          user && token ? (
+            <DashboardPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

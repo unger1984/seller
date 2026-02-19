@@ -4,7 +4,6 @@ import { create } from 'zustand';
 export interface AuthUser {
   id: string;
   email: string;
-  name: string | null;
   activeCompanyId: string | null;
 }
 

@@ -19,7 +19,14 @@
         "main": "src/main.ts",
         "outputFileName": "src/main.js",
         "tsConfig": "apps/api/tsconfig.json",
-        "generatePackageJson": false
+        "generatePackageJson": false,
+        "assets": [
+          {
+            "input": "apps/api/src/modules/email",
+            "glob": "templates/**/*.pug",
+            "output": "src/modules/email"
+          }
+        ]
       },
       "configurations": {
         "production": {}

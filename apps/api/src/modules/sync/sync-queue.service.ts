@@ -2,13 +2,8 @@
  * Сервис для постановки jobs в BullMQ.
  * Общие имена с worker через строки — shared контракт.
  */
-import { createRequire } from 'node:module';
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
-
-const require = createRequire(import.meta.url);
-const Redis = require('ioredis');
 import {
   QUEUE_NAMES,
   JOB_NAMES,
@@ -16,15 +11,13 @@ import {
   type PublishListingJobData,
   type SyncStockJobData,
 } from '@seller/domain';
+import { REDIS_TOKEN, type RedisClient } from '../../shared/redis/redis.module.js';
 
 @Injectable()
 export class SyncQueueService implements OnModuleDestroy {
   private readonly queue: Queue;
-  private readonly redis: InstanceType<typeof Redis>;
 
-  constructor(private readonly config: ConfigService) {
-    const url = this.config.get<string>('REDIS_URL', 'redis://localhost:6379');
-    this.redis = new Redis(url);
+  constructor(@Inject(REDIS_TOKEN) private readonly redis: RedisClient) {
     this.queue = new Queue(QUEUE_NAMES.SYNC, {
       connection: this.redis,
     });
@@ -47,6 +40,5 @@ export class SyncQueueService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.queue.close();
-    await this.redis.quit();
   }
 }

@@ -1,0 +1,51 @@
+---
+description: User-facing messages must be in Russian (frontend and backend)
+alwaysApply: true
+---
+
+# User-Facing Messages — Russian
+
+## Requirement
+
+All messages visible to the user must be in **Russian**.
+
+## Scope
+
+### Frontend (apps/web)
+
+- Toast notifications
+- Form validation messages
+- Error states and empty states
+- Button labels, placeholders (unless coming from design system)
+- Any text shown to the end user
+
+### Backend (apps/api)
+
+- Error messages in API responses (e.g. `UnauthorizedException`, `BadRequestException`)
+- Auth-related errors (invalid credentials, token expired, account disabled)
+- Validation error messages from DTOs or Zod
+- Any message that the frontend will display to the user
+
+## Why
+
+- Target audience is Russian-speaking
+- Backend messages are often shown as-is on the frontend (e.g. in toasts or error banners)
+- Consistent language across the product
+
+## Examples
+
+```typescript
+// ❌ BAD — backend
+throw new UnauthorizedException('Invalid credentials');
+
+// ✅ GOOD — backend
+throw new UnauthorizedException('Неверный email или пароль');
+```
+
+```typescript
+// ❌ BAD — frontend
+toast.error('Something went wrong');
+
+// ✅ GOOD — frontend
+toast.error('Что-то пошло не так');
+```

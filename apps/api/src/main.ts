@@ -8,6 +8,7 @@ import { createLogger } from '@seller/shared';
 
 const log = createLogger('App');
 import { AppModule } from './app.module.js';
+import { ConfigService } from './shared/config/config.service.js';
 import { LoggerService } from './shared/logger/logger.service.js';
 
 let appRef: { close: () => Promise<void> } | undefined;
@@ -32,7 +33,6 @@ process.on('SIGTERM', async () => {
 });
 
 async function bootstrap() {
-  const port = parseInt(process.env.PORT ?? '8084', 10);
   const isProd = process.env.NODE_ENV === 'production';
 
   let httpsOptions: { key: Buffer; cert: Buffer } | undefined;
@@ -61,8 +61,8 @@ async function bootstrap() {
   app.useLogger(app.get(LoggerService));
   app.setGlobalPrefix('api');
 
-  const raw = process.env.CORS_ORIGINS ?? '';
-  const corsOrigins = raw.split(',').map((o) => o.trim()).filter(Boolean);
+  const cfg = app.get(ConfigService);
+  const { port, corsOrigins } = cfg.cfg.server;
   if (corsOrigins.length > 0) {
     app.enableCors({
       origin: corsOrigins,
@@ -70,13 +70,13 @@ async function bootstrap() {
     });
   }
 
-  const config = new DocumentBuilder()
+  const openApiConfig = new DocumentBuilder()
     .setTitle('Seller API')
     .setDescription('API для управления товарами на Ozon и Wildberries')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const openApiDoc = SwaggerModule.createDocument(app, config);
+  const openApiDoc = SwaggerModule.createDocument(app, openApiConfig);
   SwaggerModule.setup('api/docs', app, openApiDoc);
 
   await app.listen(port);

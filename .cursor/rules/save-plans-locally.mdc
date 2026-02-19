@@ -22,8 +22,19 @@ CreatePlan saves to the global folder by default. After creating a plan, always 
 - ❌ `/Users/user/.cursor/plans/plan.md` (global folder)
 - ✅ `/Users/user/project/.cursor/plans/plan.md` (project local folder)
 
+## Filename Format
+
+Plan filenames must start with a **sequential number** (2 digits) so the implementation order is clear:
+
+- ✅ `01-seller-marketplace-sync-rfc.plan.md`
+- ✅ `02-stage-k3s-deploy.plan.md`
+- ❌ `auth-flow-overhaul.plan.md` (no number)
+
+When creating a new plan, use the next available number (inspect existing files in `.cursor/plans/` to determine it).
+
 ## Actions After CreatePlan
 
 1. Read the created plan from the global folder
-2. Write it to `<workspace>/.cursor/plans/<plan_name>.plan.md`
-3. Remove from the global folder (optional)
+2. Determine the next sequential number from existing plans in `.cursor/plans/`
+3. Write it to `<workspace>/.cursor/plans/<NN>-<plan_name>.plan.md`
+4. Remove from the global folder (optional)

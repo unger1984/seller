@@ -7,16 +7,6 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: [
-      'apps/api/**/*.ts',
-      'apps/worker/**/*.ts',
-      'packages/shared/**/*.ts',
-    ],
-    rules: {
-      'no-console': 'error',
-    },
-  },
-  {
     files: ['**/*.ts', '**/*.tsx'],
     ignores: ['node_modules', 'dist', '.nx', '**/*.d.ts'],
     languageOptions: {
@@ -35,6 +25,7 @@ export default tseslint.config(
       },
     },
     rules: {
+      'no-console': 'error',
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {

@@ -18,8 +18,7 @@ export function DashboardPage() {
       </header>
       <main>
         <p className="text-gray-600">
-          Добро пожаловать, {user?.name ?? user?.email}. Панель управления — в
-          разработке.
+          Добро пожаловать, {user?.email}. Панель управления — в разработке.
         </p>
       </main>
     </div>

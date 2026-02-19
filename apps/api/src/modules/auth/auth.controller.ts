@@ -14,21 +14,39 @@ import { createZodDto } from 'nestjs-zod';
 import type { z } from 'zod';
 import {
   ActiveCompanySchema,
+  ForgotPasswordSchema,
   LoginSchema,
   RegisterSchema,
+  ResendVerificationSchema,
+  ResetPasswordSchema,
+  VerifyEmailSchema,
 } from '@seller/shared-types';
-import type { LoginInput, RegisterInput } from '@seller/shared-types';
+import type {
+  LoginInput,
+  RegisterInput,
+  ResendVerificationInput,
+  ForgotPasswordInput,
+  VerifyEmailInput,
+  ResetPasswordInput,
+} from '@seller/shared-types';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard.js';
+import { ThrottleResendGuard } from './guards/throttle-resend.guard.js';
+import { ThrottleForgotGuard } from './guards/throttle-forgot.guard.js';
 import { Request } from 'express';
 
-/** DTO входа — cast к zod из api для обхода TS2742 */
 class LoginDto extends createZodDto(LoginSchema as z.ZodTypeAny) {}
-
-/** DTO регистрации */
 class RegisterDto extends createZodDto(RegisterSchema as z.ZodTypeAny) {}
-
-/** DTO смены активной компании */
+class ResendVerificationDto extends createZodDto(
+  ResendVerificationSchema as z.ZodTypeAny
+) {}
+class ForgotPasswordDto extends createZodDto(
+  ForgotPasswordSchema as z.ZodTypeAny
+) {}
+class VerifyEmailDto extends createZodDto(VerifyEmailSchema as z.ZodTypeAny) {}
+class ResetPasswordDto extends createZodDto(
+  ResetPasswordSchema as z.ZodTypeAny
+) {}
 class ActiveCompanyDto extends createZodDto(
   ActiveCompanySchema as z.ZodTypeAny
 ) {}
@@ -45,12 +63,42 @@ export class AuthController {
     return this.auth.register(body as RegisterInput);
   }
 
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Подтверждение email' })
+  @ApiBody({ type: VerifyEmailDto })
+  async verifyEmail(@Body() body: VerifyEmailDto) {
+    return this.auth.verifyEmail(body as VerifyEmailInput);
+  }
+
+  @Post('resend-verification')
+  @UseGuards(ThrottleResendGuard)
+  @ApiOperation({ summary: 'Повторная отправка письма верификации' })
+  @ApiBody({ type: ResendVerificationDto })
+  async resendVerification(@Body() body: ResendVerificationDto) {
+    return this.auth.resendVerification(body as ResendVerificationInput);
+  }
+
   @Post('login')
   @ApiOperation({ summary: 'Вход' })
   @ApiBody({ type: LoginDto })
   @ApiQuery({ name: 'companyId', required: false })
   async login(@Body() body: LoginDto, @Query('companyId') companyId?: string) {
     return this.auth.login(body as LoginInput, companyId);
+  }
+
+  @Post('forgot-password')
+  @UseGuards(ThrottleForgotGuard)
+  @ApiOperation({ summary: 'Запрос сброса пароля' })
+  @ApiBody({ type: ForgotPasswordDto })
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.auth.forgotPassword(body as ForgotPasswordInput);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Установка нового пароля' })
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return this.auth.resetPassword(body as ResetPasswordInput);
   }
 
   @Get('me')

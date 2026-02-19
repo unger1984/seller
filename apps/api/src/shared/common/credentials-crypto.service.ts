@@ -4,13 +4,13 @@
  * Master key — env CREDENTIALS_ENCRYPTION_KEY (32 байта hex).
  */
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   createCipheriv,
   createDecipheriv,
   randomBytes,
   scryptSync,
 } from 'crypto';
+import { ConfigService } from '../config/config.service.js';
 
 const VERSION = 1;
 const ALGORITHM = 'aes-256-gcm';
@@ -24,10 +24,7 @@ export class CredentialsCryptoService {
   private readonly key: Buffer;
 
   constructor(private readonly config: ConfigService) {
-    const secret = this.config.get<string>(
-      'CREDENTIALS_ENCRYPTION_KEY',
-      'dev-only-change-in-production-32bytes!!'
-    );
+    const secret = this.config.cfg.credentials.encryptionKey;
     this.key = scryptSync(secret, SALT, KEY_LEN);
   }
 

@@ -1,4 +1,4 @@
-/** Базовый fetch-клиент к API. VITE_API_URL — origin (http://localhost:3000), пусто — relative /api за proxy */
+/** Базовый fetch-клиент к API. VITE_API_URL — origin (https://localhost:8084 в dev), пусто — relative /api за proxy */
 const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : '/api';

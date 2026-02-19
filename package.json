@@ -11,6 +11,7 @@
     "build:api": "tsc -p apps/api",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "build:worker": "tsc -p apps/worker",
+    "certs": "mkdir -p tooling/certs && openssl req -x509 -newkey rsa:2048 -keyout tooling/certs/localhost-key.pem -out tooling/certs/localhost.pem -days 365 -nodes -subj \"/CN=localhost\"",
     "dev:api": "nx serve api",
     "dev:web": "nx serve web",
     "dev:worker": "nx run worker:run",

@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 /** Точка входа NestJS API */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { logger } from '@seller/shared';
@@ -28,8 +30,30 @@ process.on('SIGTERM', async () => {
 });
 
 async function bootstrap() {
+  const port = parseInt(process.env.PORT ?? '8084', 10);
+  const isProd = process.env.NODE_ENV === 'production';
+
+  let httpsOptions: { key: Buffer; cert: Buffer } | undefined;
+  if (!isProd) {
+    const certDir = path.resolve(process.cwd(), 'tooling/certs');
+    const certPath = path.join(certDir, 'localhost.pem');
+    const keyPath = path.join(certDir, 'localhost-key.pem');
+    if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+      logger.error(
+        'Сертификаты не найдены. Выполните: npm run certs',
+        { certPath, keyPath }
+      );
+      process.exit(1);
+    }
+    httpsOptions = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
+  }
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    ...(httpsOptions && { httpsOptions }),
   });
   appRef = app;
   app.useLogger(app.get(LoggerService));
@@ -53,7 +77,9 @@ async function bootstrap() {
   const openApiDoc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, openApiDoc);
 
-  await app.listen(3000);
+  await app.listen(port);
+  const scheme = httpsOptions ? 'https' : 'http';
+  logger.info(`${scheme}://localhost:${port}`, { prefix: 'API' });
 }
 
 bootstrap();

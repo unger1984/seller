@@ -21,12 +21,15 @@ docker-compose up -d
 cp .env.example .env
 # Отредактировать .env — пароль БД, JWT_SECRET, при необходимости CREDENTIALS_ENCRYPTION_KEY
 
+# Сертификаты (HTTPS для local/stage)
+npm run certs
+
 # Миграции
 npm run db:migrate
 
 # Запуск
-npm run dev:api    # http://localhost:3000, Swagger http://localhost:3000/api/docs
-npm run dev:web    # http://localhost:5173
+npm run dev:api    # https://localhost:8084, Swagger https://localhost:8084/api/docs
+npm run dev:web    # https://localhost:8443
 npm run dev:worker
 ```
 

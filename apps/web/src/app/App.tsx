@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { apiFetch } from '@/shared/api';
 import { Providers } from './providers';
+import { AppShell } from '@/layouts/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { RegisterPage } from '@/pages/register/RegisterPage';
 import { VerifyEmailPage } from '@/pages/verify-email/VerifyEmailPage';
@@ -39,10 +40,7 @@ function AppRoutes() {
             navigate('/onboarding/company', { replace: true });
             return;
           }
-          if (
-            (data.memberships?.length ?? 0) > 1 &&
-            !data.activeCompanyId
-          ) {
+          if ((data.memberships?.length ?? 0) > 1 && !data.activeCompanyId) {
             navigate('/onboarding/select-company', { replace: true });
             return;
           }
@@ -74,35 +72,18 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
-        path="/onboarding/company"
-        element={
-          user && token ? (
-            <CreateCompanyPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/onboarding/select-company"
-        element={
-          user && token ? (
-            <SelectCompanyPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
         path="/"
         element={
-          user && token ? (
-            <DashboardPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          user && token ? <AppShell /> : <Navigate to="/login" replace />
         }
-      />
+      >
+        <Route index element={<DashboardPage />} />
+        <Route path="onboarding/company" element={<CreateCompanyPage />} />
+        <Route
+          path="onboarding/select-company"
+          element={<SelectCompanyPage />}
+        />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -110,8 +91,10 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <Providers>
-      <AppRoutes />
-    </Providers>
+    <div className="font-sans antialiased">
+      <Providers>
+        <AppRoutes />
+      </Providers>
+    </div>
   );
 }

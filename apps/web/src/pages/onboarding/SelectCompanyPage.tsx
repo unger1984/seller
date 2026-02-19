@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/shared/api';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { Button } from '@/shared/ui/Button';
+import { Card } from '@/shared/ui/Card';
 
 interface Company {
   companyId: string;
@@ -28,8 +29,7 @@ export function SelectCompanyPage() {
     apiFetch('/auth/me', { token })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        const memberships =
-          (data?.memberships as Company[] | undefined) ?? [];
+        const memberships = (data?.memberships as Company[] | undefined) ?? [];
         setCompanies(memberships);
         if (memberships.length <= 1) {
           navigate('/', { replace: true });
@@ -76,16 +76,12 @@ export function SelectCompanyPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Загрузка...</p>
-      </div>
-    );
+    return <p className="text-gray-600">Загрузка...</p>;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm">
+    <div className="max-w-md mx-auto">
+      <Card className="p-8">
         <h1 className="text-xl font-semibold mb-6">Выберите компанию</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="space-y-2">
@@ -110,7 +106,7 @@ export function SelectCompanyPage() {
             {submitting ? 'Переход...' : 'Продолжить'}
           </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

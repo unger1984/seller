@@ -7,9 +7,9 @@ export interface ProductCardProps {
 
 export function ProductCard({ name, brand }: ProductCardProps) {
   return (
-    <div className="rounded-lg border border-gray-200 p-4 hover:border-gray-300">
-      <h3 className="font-medium">{name}</h3>
-      {brand && <p className="text-sm text-gray-500">{brand}</p>}
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+      <h3 className="font-medium text-gray-900">{name}</h3>
+      {brand && <p className="text-sm text-gray-500 mt-0.5">{brand}</p>}
     </div>
   );
 }

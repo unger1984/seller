@@ -44,10 +44,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     }
     if (data.requiresCompany) {
       navigate('/onboarding/company', { replace: true });
-    } else if (
-      data.memberships.length > 1 &&
-      !data.user.activeCompanyId
-    ) {
+    } else if (data.memberships.length > 1 && !data.user.activeCompanyId) {
       navigate('/onboarding/select-company', { replace: true });
     } else {
       navigate('/', { replace: true });
@@ -103,7 +100,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           autoComplete="current-password"
         />
         <p className="text-sm">
-          <Link to="/forgot-password" className="text-blue-600 hover:underline">
+          <Link to="/forgot-password" className="text-primary hover:underline">
             Забыли пароль?
           </Link>
         </p>

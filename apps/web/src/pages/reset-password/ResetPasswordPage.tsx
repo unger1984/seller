@@ -53,7 +53,7 @@ export function ResetPasswordPage() {
           <p className="text-gray-600 text-sm mb-4">
             Перейдите по ссылке из письма или запросите сброс пароля снова.
           </p>
-          <Link to="/forgot-password" className="text-blue-600 hover:underline">
+          <Link to="/forgot-password" className="text-primary hover:underline">
             Запросить сброс пароля
           </Link>
         </div>
@@ -103,7 +103,7 @@ export function ResetPasswordPage() {
           </Button>
         </form>
         <p className="mt-4 text-sm text-gray-600">
-          <Link to="/forgot-password" className="text-blue-600 hover:underline">
+          <Link to="/forgot-password" className="text-primary hover:underline">
             Запросить новую ссылку
           </Link>
         </p>

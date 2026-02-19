@@ -9,7 +9,9 @@ const THROTTLE_KEY = 'throttle:forgot';
 
 function getStoredCooldown(email: string): number {
   try {
-    const raw = sessionStorage.getItem(`${THROTTLE_KEY}:${email.toLowerCase()}`);
+    const raw = sessionStorage.getItem(
+      `${THROTTLE_KEY}:${email.toLowerCase()}`
+    );
     if (!raw) return 0;
     const expiresAt = Number(raw);
     if (expiresAt <= Date.now()) return 0;
@@ -100,10 +102,7 @@ export function ForgotPasswordPage() {
             <p className="text-green-600 text-sm">
               Если email зарегистрирован, письмо отправлено. Проверьте почту.
             </p>
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col gap-4 pt-2"
-            >
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-2">
               <Input
                 type="email"
                 label="Email"
@@ -112,11 +111,7 @@ export function ForgotPasswordPage() {
                 required
                 autoComplete="email"
               />
-              <Button
-                type="submit"
-                disabled={loading}
-                variant="secondary"
-              >
+              <Button type="submit" disabled={loading} variant="secondary">
                 {loading ? 'Отправка...' : 'Отправить снова'}
               </Button>
             </form>
@@ -152,7 +147,7 @@ export function ForgotPasswordPage() {
           </form>
         )}
         <p className="mt-4 text-sm text-gray-600">
-          <Link to="/login" className="text-blue-600 hover:underline">
+          <Link to="/login" className="text-primary hover:underline">
             Вернуться на вход
           </Link>
         </p>

@@ -26,10 +26,14 @@
     "db:migrate:stage": "dotenv -e .env.stage -- npm run db:migrate",
     "db:studio": "cd packages/prisma-client && prisma studio",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "devDependencies": {
     "dotenv-cli": "7.4.2",
+    "eslint": "^9.39.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "nx": "22.0.0",
     "prettier": "3.4.0",
     "typescript": "5.6.3",
@@ -44,5 +48,14 @@
     "nestjs-zod": "4.3.1",
     "zod": "3.23.8"
   },
-  "type": "module"
+  "type": "module",
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.json": [
+      "prettier --write"
+    ]
+  }
 }

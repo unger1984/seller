@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { apiFetch } from '@/shared/api';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { Button } from '@/shared/ui/Button';
+import { Card } from '@/shared/ui/Card';
 import { Input } from '@/shared/ui/Input';
 
 /** Страница создания компании после верификации */
@@ -42,22 +43,22 @@ export function CreateCompanyPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
+      <div className="max-w-md mx-auto">
+        <Card className="p-8">
           <p className="text-green-600 font-medium">
             Компания создана. Дождитесь активации аккаунта.
           </p>
           <p className="mt-2 text-gray-600 text-sm">
             Администратор активирует ваш аккаунт. После этого вы сможете войти.
           </p>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm">
+    <div className="max-w-md mx-auto">
+      <Card className="p-8">
         <h1 className="text-xl font-semibold mb-6">Создание компании</h1>
         <p className="text-gray-600 text-sm mb-4">
           Укажите название вашей компании.
@@ -77,7 +78,7 @@ export function CreateCompanyPage() {
             {loading ? 'Создание...' : 'Создать'}
           </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

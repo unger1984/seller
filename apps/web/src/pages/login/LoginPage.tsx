@@ -1,20 +1,25 @@
 import { Link } from 'react-router-dom';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
+import { Card } from '@/shared/ui/Card';
 
 /** Страница входа */
 export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm">
-        <h1 className="text-xl font-semibold mb-6">Seller — Вход</h1>
+      <Card className="w-full max-w-md p-8 rounded-xl shadow-lg">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Seller</h1>
+        <p className="text-gray-500 mb-6">Вход</p>
         <LoginForm />
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-6 text-sm text-gray-600">
           Нет аккаунта?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
+          <Link
+            to="/register"
+            className="text-primary hover:underline font-medium"
+          >
             Зарегистрироваться
           </Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

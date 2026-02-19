@@ -1,10 +1,10 @@
 import type { ButtonHTMLAttributes } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'ghost';
 }
 
-/** Базовая кнопка */
+/** Базовая кнопка в стиле Ozon */
 export function Button({
   variant = 'primary',
   className = '',
@@ -12,10 +12,12 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    'px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex flex-row flex-nowrap items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300',
+    primary: 'bg-primary text-white hover:bg-primary-hover',
+    secondary:
+      'bg-white border border-primary text-gray-700 hover:bg-primary-light',
+    ghost: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
   };
   return (
     <button

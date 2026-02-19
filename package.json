@@ -31,15 +31,15 @@
   },
   "devDependencies": {
     "dotenv-cli": "7.4.2",
-    "eslint": "^9.39.2",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
+    "eslint": "9.39.2",
+    "husky": "9.1.7",
+    "lint-staged": "16.2.7",
     "nx": "22.0.0",
     "prettier": "3.4.0",
     "typescript": "5.6.3",
-    "typescript-eslint": "^8.0.0",
-    "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.4"
+    "typescript-eslint": "8.0.0",
+    "vite-tsconfig-paths": "6.1.1",
+    "vitest": "3.2.4"
   },
   "overrides": {
     "jest-resolve": "29.2.0"

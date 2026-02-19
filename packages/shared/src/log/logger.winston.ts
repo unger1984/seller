@@ -26,10 +26,7 @@ const format = winston.format.combine(
                 ? (itm.stack ?? itm.message)
                 : JSON.stringify(itm)
           )
-          .reduce(
-            (prev, next) => (next ? `${prev}, ${next}` : prev),
-            firstStr
-          )
+          .reduce((prev, next) => (next ? `${prev}, ${next}` : prev), firstStr)
       );
     } else {
       msg = String(

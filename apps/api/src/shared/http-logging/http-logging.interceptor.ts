@@ -36,9 +36,10 @@ export class HttpLoggingInterceptor implements NestInterceptor {
           });
         },
         error: (err: unknown) => {
-          const statusCode = err && typeof err === 'object' && 'status' in err
-            ? (err as { status?: number }).status ?? 500
-            : 500;
+          const statusCode =
+            err && typeof err === 'object' && 'status' in err
+              ? ((err as { status?: number }).status ?? 500)
+              : 500;
           const duration = Date.now() - start;
           this.log.http(`${method} ${url} ${statusCode} ${duration}ms`, {
             method,
@@ -50,7 +51,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
             error: err instanceof Error ? err.message : String(err),
           });
         },
-      }),
+      })
     );
   }
 }

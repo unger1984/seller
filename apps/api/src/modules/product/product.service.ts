@@ -82,14 +82,14 @@ export class ProductService {
         },
       },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('Товар не найден');
     return product;
   }
 
   /** Обновить продукт */
   async update(companyId: string, id: string, data: UpdateProductInput) {
     const p = await this.prisma.product.findFirst({ where: { id, companyId } });
-    if (!p) throw new NotFoundException('Product not found');
+    if (!p) throw new NotFoundException('Товар не найден');
     return this.prisma.product.update({
       where: { id },
       data: {
@@ -111,7 +111,7 @@ export class ProductService {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, companyId },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('Товар не найден');
     return this.prisma.variant.findMany({
       where: { productId },
       include: { barcodes: true },
@@ -127,7 +127,7 @@ export class ProductService {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, companyId },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) throw new NotFoundException('Товар не найден');
 
     return this.prisma.variant.create({
       data: {
@@ -152,7 +152,7 @@ export class ProductService {
     const variant = await this.prisma.variant.findFirst({
       where: { id: variantId, productId, companyId },
     });
-    if (!variant) throw new NotFoundException('Variant not found');
+    if (!variant) throw new NotFoundException('Вариант не найден');
     return this.prisma.variant.update({
       where: { id: variantId },
       data: {
@@ -175,9 +175,9 @@ export class ProductService {
     const variant = await this.prisma.variant.findFirst({
       where: { id: variantId, productId, companyId },
     });
-    if (!variant) throw new NotFoundException('Variant not found');
+    if (!variant) throw new NotFoundException('Вариант не найден');
     const barcode = data.barcode.trim();
-    if (!barcode) throw new ForbiddenException('Barcode cannot be empty');
+    if (!barcode) throw new ForbiddenException('Штрихкод не может быть пустым');
 
     return this.prisma.variantBarcode.create({
       data: {
@@ -202,7 +202,7 @@ export class ProductService {
         variant: { productId, companyId },
       },
     });
-    if (!barcode) throw new NotFoundException('Barcode not found');
+    if (!barcode) throw new NotFoundException('Штрихкод не найден');
     await this.prisma.variantBarcode.delete({ where: { id: barcodeId } });
     return { deleted: true };
   }

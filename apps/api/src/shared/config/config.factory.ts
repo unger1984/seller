@@ -46,7 +46,7 @@ export function readConfig(): Config {
 
   const server: ConfigServer = {
     port: parseInt(optionalEnv('PORT', '8084'), 10),
-    corsOrigins: (optionalEnv('CORS_ORIGINS', ''))
+    corsOrigins: optionalEnv('CORS_ORIGINS', '')
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean),

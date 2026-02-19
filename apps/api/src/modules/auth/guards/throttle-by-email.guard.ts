@@ -11,7 +11,10 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Inject } from '@nestjs/common';
-import { REDIS_TOKEN, type RedisClient } from '../../../shared/redis/redis.module.js';
+import {
+  REDIS_TOKEN,
+  type RedisClient,
+} from '../../../shared/redis/redis.module.js';
 
 @Injectable()
 export abstract class ThrottleByEmailGuard implements CanActivate {

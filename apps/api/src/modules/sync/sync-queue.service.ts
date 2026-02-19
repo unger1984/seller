@@ -11,7 +11,10 @@ import {
   type PublishListingJobData,
   type SyncStockJobData,
 } from '@seller/domain';
-import { REDIS_TOKEN, type RedisClient } from '../../shared/redis/redis.module.js';
+import {
+  REDIS_TOKEN,
+  type RedisClient,
+} from '../../shared/redis/redis.module.js';
 
 @Injectable()
 export class SyncQueueService implements OnModuleDestroy {

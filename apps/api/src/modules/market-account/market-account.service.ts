@@ -68,9 +68,9 @@ export class MarketAccountService {
     const acc = await this.prisma.marketAccount.findFirst({
       where: { id, companyId },
     });
-    if (!acc) throw new NotFoundException('Market account not found');
+    if (!acc) throw new NotFoundException('Аккаунт маркетплейса не найден');
     if (acc.marketplace !== data.marketplace) {
-      throw new ForbiddenException('Marketplace mismatch');
+      throw new ForbiddenException('Маркетплейс не совпадает');
     }
 
     const credentialsJson = JSON.stringify(data.credentials);
@@ -95,7 +95,7 @@ export class MarketAccountService {
     const acc = await this.prisma.marketAccount.findFirst({
       where: { id, companyId },
     });
-    if (!acc) throw new NotFoundException('Market account not found');
+    if (!acc) throw new NotFoundException('Аккаунт маркетплейса не найден');
     await this.prisma.marketAccount.delete({ where: { id } });
     return { deleted: true };
   }

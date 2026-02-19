@@ -4,7 +4,11 @@
 import { describe, it, expect } from 'vitest';
 import { findMatchingVariant, type VariantForMatch } from './matching.js';
 
-function v(id: string, vendorCode: string, barcodes: string[]): VariantForMatch {
+function v(
+  id: string,
+  vendorCode: string,
+  barcodes: string[]
+): VariantForMatch {
   return { id, vendorCode, barcodes };
 }
 

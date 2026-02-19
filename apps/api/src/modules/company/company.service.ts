@@ -61,7 +61,7 @@ export class CompanyService {
       include: { company: true },
     });
     if (!member) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException('Компания не найдена');
     }
     return member.company;
   }

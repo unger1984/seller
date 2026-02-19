@@ -8,7 +8,9 @@ const THROTTLE_KEY = 'throttle:resend';
 
 function getStoredCooldown(email: string): number {
   try {
-    const raw = sessionStorage.getItem(`${THROTTLE_KEY}:${email.toLowerCase()}`);
+    const raw = sessionStorage.getItem(
+      `${THROTTLE_KEY}:${email.toLowerCase()}`
+    );
     if (!raw) return 0;
     const expiresAt = Number(raw);
     if (expiresAt <= Date.now()) return 0;

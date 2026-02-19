@@ -30,11 +30,12 @@ export class ListingService {
         where: { id: data.marketAccountId, companyId },
       }),
     ]);
-    if (!variant) throw new NotFoundException('Variant not found');
-    if (!marketAccount) throw new NotFoundException('Market account not found');
+    if (!variant) throw new NotFoundException('Вариант не найден');
+    if (!marketAccount)
+      throw new NotFoundException('Аккаунт маркетплейса не найден');
     if (variant.companyId !== marketAccount.companyId) {
       throw new ForbiddenException(
-        'Variant and market account must belong to the same company'
+        'Вариант и аккаунт маркетплейса должны принадлежать одной компании'
       );
     }
 
@@ -90,7 +91,7 @@ export class ListingService {
     const listing = await this.prisma.listing.findFirst({
       where: { id, companyId },
     });
-    if (!listing) throw new NotFoundException('Listing not found');
+    if (!listing) throw new NotFoundException('Листинг не найден');
     return this.prisma.listing.update({
       where: { id },
       data: {
@@ -106,7 +107,7 @@ export class ListingService {
     const listing = await this.prisma.listing.findFirst({
       where: { id, companyId },
     });
-    if (!listing) throw new NotFoundException('Listing not found');
+    if (!listing) throw new NotFoundException('Листинг не найден');
     const { jobId } = await this.syncQueue.addPublishListing({
       listingId: id,
       companyId,
@@ -126,7 +127,7 @@ export class ListingService {
     const listing = await this.prisma.listing.findFirst({
       where: { id, companyId },
     });
-    if (!listing) throw new NotFoundException('Listing not found');
+    if (!listing) throw new NotFoundException('Листинг не найден');
     const { jobId } = await this.syncQueue.addSyncStock({
       listingId: id,
       companyId,

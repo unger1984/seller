@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
  * @param initialSeconds — стартовое значение, 0 = не запущен
  * @returns [оставшиеся секунды, запустить с нового значения]
  */
-export function useCountdown(initialSeconds = 0): [number, (seconds: number) => void] {
+export function useCountdown(
+  initialSeconds = 0
+): [number, (seconds: number) => void] {
   const [seconds, setSeconds] = useState(initialSeconds);
 
   useEffect(() => {

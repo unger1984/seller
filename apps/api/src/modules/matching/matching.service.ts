@@ -53,17 +53,18 @@ export class MatchingService {
         where: { id: candidateId },
         include: { marketAccount: true },
       });
-      if (!candidate) throw new NotFoundException('Match candidate not found');
+      if (!candidate)
+        throw new NotFoundException('Кандидат сопоставления не найден');
       if (candidate.marketAccount.companyId !== companyId)
-        throw new ForbiddenException('Company mismatch');
+        throw new ForbiddenException('Компания не совпадает');
 
       const variant = await tx.variant.findFirst({
         where: { id: variantId, companyId },
       });
-      if (!variant) throw new NotFoundException('Variant not found');
+      if (!variant) throw new NotFoundException('Вариант не найден');
       if (variant.companyId !== candidate.marketAccount.companyId)
         throw new ForbiddenException(
-          'Variant and market account company mismatch'
+          'Вариант и аккаунт маркетплейса принадлежат разным компаниям'
         );
 
       return tx.matchCandidate.update({
@@ -83,9 +84,10 @@ export class MatchingService {
       where: { id: candidateId },
       include: { marketAccount: true },
     });
-    if (!candidate) throw new NotFoundException('Match candidate not found');
+    if (!candidate)
+      throw new NotFoundException('Кандидат сопоставления не найден');
     if (candidate.marketAccount.companyId !== companyId)
-      throw new ForbiddenException('Company mismatch');
+      throw new ForbiddenException('Компания не совпадает');
 
     await this.prisma.matchCandidate.delete({ where: { id: candidateId } });
     return { deleted: true };

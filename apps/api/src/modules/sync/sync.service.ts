@@ -16,7 +16,7 @@ export class SyncService {
     const account = await this.prisma.marketAccount.findFirst({
       where: { id: data.marketAccountId, companyId },
     });
-    if (!account) throw new NotFoundException('Market account not found');
+    if (!account) throw new NotFoundException('Аккаунт маркетплейса не найден');
     const result = await this.queue.addImportCatalog({
       marketAccountId: data.marketAccountId,
       companyId,
@@ -35,6 +35,6 @@ export class SyncService {
 
   /** Детали job — stub */
   async getJob(_companyId: string, _jobId: string) {
-    throw new NotFoundException('Job not found');
+    throw new NotFoundException('Задача не найдена');
   }
 }

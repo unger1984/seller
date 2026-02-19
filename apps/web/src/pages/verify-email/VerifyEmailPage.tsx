@@ -86,14 +86,12 @@ export function VerifyEmailPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-sm max-w-sm">
         <h1 className="text-xl font-semibold mb-6">
-          {status === 'no-token'
-            ? 'Ссылка недействительна'
-            : 'Ссылка устарела'}
+          {status === 'no-token' ? 'Ссылка недействительна' : 'Ссылка устарела'}
         </h1>
         <p className="text-gray-600 text-sm mb-4">
           {status === 'no-token'
             ? 'Перейдите по ссылке из письма или запросите новое.'
-            : error ?? 'Запросите новое письмо.'}
+            : (error ?? 'Запросите новое письмо.')}
         </p>
         <ResendVerificationForm />
         <p className="mt-4">

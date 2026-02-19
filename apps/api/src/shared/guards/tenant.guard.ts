@@ -16,11 +16,11 @@ export class TenantGuard implements CanActivate {
     const activeCompanyId = (req.user as JwtUser | undefined)?.activeCompanyId;
 
     if (!activeCompanyId) {
-      throw new ForbiddenException('Active company not set');
+      throw new ForbiddenException('Активная компания не выбрана');
     }
     if (paramCompanyId && paramCompanyId !== activeCompanyId) {
       throw new ForbiddenException(
-        'Company ID in URL does not match active company'
+        'ID компании в URL не совпадает с активной компанией'
       );
     }
     return true;

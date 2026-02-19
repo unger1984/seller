@@ -49,7 +49,9 @@ export class AuthService {
       await this.tokenStore.invalidateEmailVerificationForUser(user.id);
       await this.tokenStore.setEmailVerificationToken(user.id, tokenHash);
       await this.email.sendVerificationEmail(user.email, rawToken);
-      return { message: 'Check your email' };
+      return {
+        message: 'Проверьте почту. Ссылка для подтверждения отправлена.',
+      };
     } catch (err) {
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -66,13 +68,10 @@ export class AuthService {
     data: VerifyEmailInput
   ): Promise<{ accessToken: string; user: UserResponse }> {
     const tokenHash = hashToken(data.token);
-    const userId = await this.tokenStore.getUserIdByEmailVerificationToken(
-      tokenHash
-    );
+    const userId =
+      await this.tokenStore.getUserIdByEmailVerificationToken(tokenHash);
     if (!userId) {
-      throw new BadRequestException(
-        'Ссылка устарела. Запросите новое письмо.'
-      );
+      throw new BadRequestException('Ссылка устарела. Запросите новое письмо.');
     }
     await this.prisma.user.update({
       where: { id: userId },
@@ -118,20 +117,17 @@ export class AuthService {
   }
 
   /** Вход: проверка emailVerifiedAt, isActive, выдача JWT с memberships */
-  async login(
-    data: LoginInput,
-    companyId?: string
-  ): Promise<LoginResponse> {
+  async login(data: LoginInput, companyId?: string): Promise<LoginResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: data.email },
       include: { companyMembers: { include: { company: true } } },
     });
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
     const ok = await bcrypt.compare(data.password, user.passwordHash);
     if (!ok) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
     if (!user.emailVerifiedAt) {
       throw new ForbiddenException(
@@ -139,7 +135,7 @@ export class AuthService {
       );
     }
     if (!user.isActive) {
-      throw new ForbiddenException('Account not activated');
+      throw new ForbiddenException('Аккаунт не активирован');
     }
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,
@@ -209,7 +205,7 @@ export class AuthService {
       include: { user: true, company: true },
     });
     if (!member) {
-      throw new UnauthorizedException('Not a member of this company');
+      throw new UnauthorizedException('Вы не состоите в этой компании');
     }
     const accessToken = this.jwt.sign({
       sub: member.userId,
@@ -229,7 +225,7 @@ export class AuthService {
       include: { companyMembers: { include: { company: true } } },
     });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Пользователь не найден');
     }
     if (!user.emailVerifiedAt) {
       throw new ForbiddenException(
@@ -237,7 +233,7 @@ export class AuthService {
       );
     }
     if (!user.isActive) {
-      throw new ForbiddenException('Account not activated');
+      throw new ForbiddenException('Аккаунт не активирован');
     }
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,

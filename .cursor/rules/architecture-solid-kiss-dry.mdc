@@ -1,0 +1,58 @@
+---
+description: Architectural principles — SOLID, KISS, DRY
+alwaysApply: true
+---
+
+# Architecture — SOLID, KISS, DRY
+
+## SOLID
+
+- **S (Single Responsibility)** — one class/module = one area of responsibility. Split large services into smaller ones.
+- **O (Open/Closed)** — open for extension, closed for modification. Prefer composition and dependency injection over changing existing code.
+- **L (Liskov Substitution)** — subtypes must be replaceable by the base type without breaking behavior.
+- **I (Interface Segregation)** — narrow interfaces over «fat» ones. Don't force clients to depend on methods they don't use.
+- **D (Dependency Inversion)** — depend on abstractions (interfaces), not on concrete implementations. In NestJS — inject services via constructor.
+
+## KISS
+
+- Prefer the simplest solution first. Don't over-engineer.
+- Avoid unnecessary abstractions, patterns, and layers until there is a real need.
+
+## DRY
+
+- Don't duplicate logic. Extract repeated code into functions, helpers, or shared services.
+- When duplication appears — assess whether an abstraction (shared module, common service) is needed or a single call site suffices.
+
+## Examples
+
+```typescript
+// ❌ BAD — SRP violation: сервис и парсинг в одном месте
+class ProductService {
+  parseOzonResponse(raw: string) { /* ... */ }
+  parseWbResponse(raw: string) { /* ... */ }
+  createProduct() { /* ... */ }
+}
+
+// ✅ GOOD — разделение ответственностей
+class OzonParser { parse(raw: string) { /* ... */ } }
+class WbParser { parse(raw: string) { /* ... */ } }
+class ProductService { /* product business logic only */ }
+```
+
+```typescript
+// ❌ BAD — DRY violation
+if (platform === 'ozon') {
+  const url = `https://api.ozon.ru/v1/product/${id}`;
+  const res = await fetch(url, { headers: { ... } });
+  return res.json();
+}
+if (platform === 'wb') {
+  const url = `https://suppliers-api.wildberries.ru/api/v1/product/${id}`;
+  const res = await fetch(url, { headers: { ... } });
+  return res.json();
+}
+
+// ✅ GOOD — common approach, details in implementation
+const client = marketClients.get(platform);
+return client.getProduct(id);
+```

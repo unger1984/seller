@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "../../dist/apps/worker",
+    "outDir": "../../dist/apps/worker-sync-stock",
     "rootDir": "src"
   },
   "include": ["src/**/*"]

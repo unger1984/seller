@@ -1,13 +1,14 @@
 {
-  "name": "@seller/worker",
+  "name": "@seller/worker-lib",
   "version": "1.0.0",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "bullmq": "5.0.0",
     "ioredis": "5.4.0",
     "@seller/domain": "*",
     "@seller/shared": "*",
-    "@seller/shared-types": "*",
     "@seller/prisma-client": "*"
   }
 }

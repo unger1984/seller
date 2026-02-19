@@ -1,6 +1,6 @@
 ---
 description: Logging via Winston, no console.log
-globs: apps/api/**/*.ts, apps/worker/**/*.ts, packages/shared/**/*.ts
+globs: apps/api/**/*.ts, apps/worker-import/**/*.ts, apps/worker-publish/**/*.ts, apps/worker-sync-stock/**/*.ts, packages/worker-lib/**/*.ts, packages/shared/**/*.ts
 alwaysApply: false
 ---
 

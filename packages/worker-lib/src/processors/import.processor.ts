@@ -4,11 +4,13 @@
  */
 import type { Job } from 'bullmq';
 import { createLogger } from '@seller/shared';
-import type { ImportCatalogJobData } from '../queues.js';
+import type { ImportCatalogJobData } from '@seller/domain';
 
 const log = createLogger('ImportProcessor');
 
-export async function processImportCatalog(job: Job<ImportCatalogJobData>) {
+export async function processImportCatalog(
+  job: Job<ImportCatalogJobData>
+): Promise<{ status: string }> {
   const { marketAccountId, companyId } = job.data;
   // Stub: логируем, реальная реализация — вызов API маркетплейса
   log.i(`marketAccountId=${marketAccountId} companyId=${companyId}`, {

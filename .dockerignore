@@ -1,0 +1,14 @@
+# Для docker build из корня (deploy/Dockerfile.worker)
+node_modules
+dist
+.nx
+.git
+.env
+.env.*
+!.env.example
+!.env.stage.example
+apps/web
+apps/api
+docs
+.cursor
+*.md

@@ -2,7 +2,9 @@
  * Имена очередей и типы jobs — shared контракт API ↔ Worker.
  */
 export const QUEUE_NAMES = {
-  SYNC: 'sync',
+  IMPORT_CATALOG: 'import-catalog',
+  PUBLISH_LISTING: 'publish-listing',
+  SYNC_STOCK: 'sync-stock',
 } as const;
 
 export const JOB_NAMES = {

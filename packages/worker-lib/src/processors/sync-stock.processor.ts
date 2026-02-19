@@ -5,11 +5,13 @@
  */
 import type { Job } from 'bullmq';
 import { createLogger } from '@seller/shared';
-import type { SyncStockJobData } from '../queues.js';
+import type { SyncStockJobData } from '@seller/domain';
 
 const log = createLogger('SyncStockProcessor');
 
-export async function processSyncStock(job: Job<SyncStockJobData>) {
+export async function processSyncStock(
+  job: Job<SyncStockJobData>
+): Promise<{ status: string }> {
   const { listingId, companyId } = job.data;
   // Stub
   log.i(`listingId=${listingId} companyId=${companyId}`, {

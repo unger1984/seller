@@ -1,5 +1,5 @@
 {
-  "name": "worker",
+  "name": "worker-import",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "src",
   "projectType": "application",
@@ -8,24 +8,24 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["apps/worker/**/*.ts"]
+        "lintFilePatterns": ["apps/worker-import/**/*.ts"]
       }
     },
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/apps/worker",
+        "outputPath": "dist/apps/worker-import",
         "main": "src/main.ts",
         "outputFileName": "src/main.js",
-        "tsConfig": "apps/worker/tsconfig.json",
+        "tsConfig": "apps/worker-import/tsconfig.json",
         "generatePackageJson": false
       }
     },
     "run": {
       "executor": "@nx/js:node",
       "options": {
-        "buildTarget": "worker:build"
+        "buildTarget": "worker-import:build"
       }
     }
   }

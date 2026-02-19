@@ -37,7 +37,7 @@ npm run dev:worker
 
 - `apps/api` — NestJS API, Swagger `/api/docs`
 - `apps/web` — React + Vite + FSD
-- `apps/worker` — BullMQ worker (sync, import, publish)
+- `apps/worker-import`, `worker-publish`, `worker-sync-stock` — BullMQ workers (SRP: одна очередь — один образ)
 - `packages/` — domain, shared-types, prisma-client, api-contracts, shared
 
 ## Команды

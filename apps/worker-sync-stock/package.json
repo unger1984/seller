@@ -1,0 +1,9 @@
+{
+  "name": "@seller/worker-sync-stock",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@seller/domain": "*",
+    "@seller/worker-lib": "*"
+  }
+}

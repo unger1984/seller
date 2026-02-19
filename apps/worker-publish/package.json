@@ -1,0 +1,9 @@
+{
+  "name": "@seller/worker-publish",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@seller/domain": "*",
+    "@seller/worker-lib": "*"
+  }
+}

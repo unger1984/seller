@@ -1,0 +1,16 @@
+{
+  "name": "worker-lib",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "tsc -p packages/worker-lib",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

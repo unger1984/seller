@@ -1,0 +1,117 @@
+# ConfigMap: env для воркеров (Redis — внутренний адрес в кластере)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seller-workers-config
+  namespace: seller-stage
+  labels:
+    app: seller-workers
+data:
+  REDIS_URL: "redis://seller-redis:6379"
+---
+# Secret не в репо — создать вручную:
+# kubectl create secret generic seller-worker-secret \
+#   --from-literal=DATABASE_URL='postgresql://seller:seller@seller-postgres:5432/seller' \
+#   -n seller-stage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-worker-import
+  namespace: seller-stage
+  labels:
+    app: seller-worker-import
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-worker-import
+  template:
+    metadata:
+      labels:
+        app: seller-worker-import
+    spec:
+      containers:
+        - name: worker
+          image: 192.168.1.8:30500/seller/worker-import:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: seller-workers-config
+            - secretRef:
+                name: seller-worker-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-worker-publish
+  namespace: seller-stage
+  labels:
+    app: seller-worker-publish
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-worker-publish
+  template:
+    metadata:
+      labels:
+        app: seller-worker-publish
+    spec:
+      containers:
+        - name: worker
+          image: 192.168.1.8:30500/seller/worker-publish:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: seller-workers-config
+            - secretRef:
+                name: seller-worker-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-worker-sync-stock
+  namespace: seller-stage
+  labels:
+    app: seller-worker-sync-stock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-worker-sync-stock
+  template:
+    metadata:
+      labels:
+        app: seller-worker-sync-stock
+    spec:
+      containers:
+        - name: worker
+          image: 192.168.1.8:30500/seller/worker-sync-stock:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: seller-workers-config
+            - secretRef:
+                name: seller-worker-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

@@ -1,0 +1,32 @@
+{
+  "name": "worker-publish",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "src",
+  "projectType": "application",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/worker-publish/**/*.ts"]
+      }
+    },
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/worker-publish",
+        "main": "src/main.ts",
+        "outputFileName": "src/main.js",
+        "tsConfig": "apps/worker-publish/tsconfig.json",
+        "generatePackageJson": false
+      }
+    },
+    "run": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "worker-publish:build"
+      }
+    }
+  }
+}

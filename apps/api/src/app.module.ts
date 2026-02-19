@@ -8,7 +8,6 @@ import { ConfigModule } from './shared/config/config.module.js';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 import { RedisModule } from './shared/redis/redis.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
-import { EmailModule } from './modules/email/email.module.js';
 import { CompanyModule } from './modules/company/company.module.js';
 import { MarketAccountModule } from './modules/market-account/market-account.module.js';
 import { ProductModule } from './modules/product/product.module.js';
@@ -23,7 +22,6 @@ import { SyncModule } from './modules/sync/sync.module.js';
     PrismaModule,
     RedisModule,
     AuthModule,
-    EmailModule,
     CompanyModule,
     MarketAccountModule,
     ProductModule,

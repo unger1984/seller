@@ -1,26 +1,26 @@
 /** Сервис отправки писем верификации и сброса пароля */
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { createLogger } from '@seller/shared';
-import { ConfigService } from '../../shared/config/config.service.js';
+import type { EmailConfig } from './email.config.js';
 
 const log = createLogger('Email');
+
+export const EMAIL_CONFIG = 'EMAIL_CONFIG';
 
 @Injectable()
 export class EmailService {
   constructor(
     private readonly mailer: MailerService,
-    private readonly config: ConfigService
+    @Inject(EMAIL_CONFIG) private readonly config: EmailConfig
   ) {}
 
-  async sendVerificationEmail(to: string, token: string): Promise<void> {
-    const baseUrl = this.config.cfg.server.frontendUrl;
-    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
-    if (this.config.cfg.smtp.dryRun) {
+  async sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
+    if (this.config.smtp.dryRun) {
       log.i('DRY_RUN: verify email', { to, verifyUrl });
       return;
     }
-    if (!this.config.cfg.smtp.host) {
+    if (!this.config.smtp.host) {
       log.i('Verify email (jsonTransport — ссылка для теста)', {
         to,
         verifyUrl,
@@ -35,14 +35,12 @@ export class EmailService {
     });
   }
 
-  async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    const baseUrl = this.config.cfg.server.frontendUrl;
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
-    if (this.config.cfg.smtp.dryRun) {
+  async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+    if (this.config.smtp.dryRun) {
       log.i('DRY_RUN: reset password', { to, resetUrl });
       return;
     }
-    if (!this.config.cfg.smtp.host) {
+    if (!this.config.smtp.host) {
       log.i('Reset password (jsonTransport — ссылка для теста)', {
         to,
         resetUrl,

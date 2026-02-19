@@ -80,16 +80,19 @@ sudo systemctl restart k3s
 npm run docker:worker:import
 npm run docker:worker:publish
 npm run docker:worker:sync-stock
+npm run docker:worker:email
 
 # Тег и push
 REGISTRY=192.168.1.8:30500
 docker tag seller/worker-import:latest ${REGISTRY}/seller/worker-import:latest
 docker tag seller/worker-publish:latest ${REGISTRY}/seller/worker-publish:latest
 docker tag seller/worker-sync-stock:latest ${REGISTRY}/seller/worker-sync-stock:latest
+docker tag seller/worker-email:latest ${REGISTRY}/seller/worker-email:latest
 
 docker push ${REGISTRY}/seller/worker-import:latest
 docker push ${REGISTRY}/seller/worker-publish:latest
 docker push ${REGISTRY}/seller/worker-sync-stock:latest
+docker push ${REGISTRY}/seller/worker-email:latest
 ```
 
 ### Шаг 7. Проверка
@@ -99,7 +102,7 @@ kubectl get pods -n seller-stage
 kubectl get pods -n registry
 ```
 
-Ожидается: `seller-postgres`, `seller-redis`, `seller-worker-*` в Running; `registry-*` в Running.
+Ожидается: `seller-postgres`, `seller-redis`, `seller-worker-import`, `seller-worker-publish`, `seller-worker-sync-stock`, `seller-worker-email` в Running; `registry-*` в Running.
 
 ---
 
@@ -142,9 +145,12 @@ cp .env.stage.example .env.stage
 npm run dev:api:stage
 
 # Workers (в отдельных терминалах)
-npm run dev:worker:stage           # worker-import
-dotenv -e .env.stage -- nx run worker-publish:run
-dotenv -e .env.stage -- nx run worker-sync-stock:run
+npm run dev:worker:stage           # все воркеры включая worker-email
+# или по отдельности:
+# dotenv -e .env.stage -- nx run worker-import:run
+# dotenv -e .env.stage -- nx run worker-publish:run
+# dotenv -e .env.stage -- nx run worker-sync-stock:run
+# dotenv -e .env.stage -- nx run worker-email:run
 ```
 
 ### Миграции

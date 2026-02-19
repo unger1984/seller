@@ -1,4 +1,5 @@
 # ConfigMap: env для воркеров (Redis — внутренний адрес в кластере)
+# worker-email: + FRONTEND_URL, SMTP_* (или в Secret)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,9 +10,12 @@ metadata:
 data:
   REDIS_URL: "redis://seller-redis:6379"
 ---
-# Secret не в репо — создать вручную:
+# Secret не в репо — создать вручную.
+# worker-email не требует DATABASE_URL, нужны SMTP_*, FRONTEND_URL:
 # kubectl create secret generic seller-worker-secret \
-#   --from-literal=DATABASE_URL='postgresql://seller:seller@seller-postgres:5432/seller' \
+#   --from-literal=DATABASE_URL='postgresql://...' \
+#   --from-literal=FRONTEND_URL='https://...' \
+#   --from-literal=SMTP_HOST='...' --from-literal=SMTP_USER='...' --from-literal=SMTP_PASSWORD='...' \
 #   -n seller-stage
 ---
 apiVersion: apps/v1
@@ -102,6 +106,40 @@ spec:
       containers:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-sync-stock:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: seller-workers-config
+            - secretRef:
+                name: seller-worker-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-worker-email
+  namespace: seller-stage
+  labels:
+    app: seller-worker-email
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-worker-email
+  template:
+    metadata:
+      labels:
+        app: seller-worker-email
+    spec:
+      containers:
+        - name: worker
+          image: 192.168.1.8:30500/seller/worker-email:latest
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:

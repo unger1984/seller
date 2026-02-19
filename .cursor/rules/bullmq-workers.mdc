@@ -1,6 +1,6 @@
 ---
 description: BullMQ workers — job naming, idempotency, rate limit, backoff
-globs: apps/worker-import/**/*.ts, apps/worker-publish/**/*.ts, apps/worker-sync-stock/**/*.ts, packages/worker-lib/**/*.ts
+globs: apps/worker-import/**/*.ts, apps/worker-publish/**/*.ts, apps/worker-sync-stock/**/*.ts, apps/worker-email/**/*.ts, packages/worker-lib/**/*.ts
 alwaysApply: false
 ---
 
@@ -8,8 +8,8 @@ alwaysApply: false
 
 ## SRP: Queue and Worker per job type
 
-- One queue per job type: `import-catalog`, `publish-listing`, `sync-stock`
-- Three Nx projects: `worker-import`, `worker-publish`, `worker-sync-stock` — независимый деплой в K8s
+- One queue per job type: `import-catalog`, `publish-listing`, `sync-stock`, `email`
+- Four Nx projects: `worker-import`, `worker-publish`, `worker-sync-stock`, `worker-email` — независимый деплой в K8s
 
 ## Job Naming
 

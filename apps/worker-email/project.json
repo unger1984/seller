@@ -1,0 +1,33 @@
+{
+  "name": "worker-email",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "src",
+  "projectType": "application",
+  "implicitDependencies": ["email-module"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/worker-email/**/*.ts"]
+      }
+    },
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/worker-email",
+        "main": "src/main.ts",
+        "outputFileName": "src/main.js",
+        "tsConfig": "apps/worker-email/tsconfig.json",
+        "generatePackageJson": false
+      }
+    },
+    "run": {
+      "executor": "@nx/js:node",
+      "options": {
+        "buildTarget": "worker-email:build"
+      }
+    }
+  }
+}

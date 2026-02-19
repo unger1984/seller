@@ -1,0 +1,15 @@
+{
+  "name": "@seller/email-module",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@nestjs-modules/mailer": "2.0.2",
+    "@nestjs/common": "11.0.2",
+    "@nestjs/core": "11.0.2",
+    "@seller/shared": "*",
+    "nodemailer": "8.0.1",
+    "pug": "3.0.3"
+  }
+}

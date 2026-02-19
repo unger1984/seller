@@ -6,10 +6,10 @@ import { ConfigService } from '../../shared/config/config.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { AuthTokenStore } from './auth-token.store.js';
+import { EmailQueueService } from './email-queue.service.js';
 import { JwtStrategy } from './jwt.strategy.js';
 import { ThrottleResendGuard } from './guards/throttle-resend.guard.js';
 import { ThrottleForgotGuard } from './guards/throttle-forgot.guard.js';
-import { EmailModule } from '../email/email.module.js';
 
 @Module({
   imports: [
@@ -21,12 +21,12 @@ import { EmailModule } from '../email/email.module.js';
         signOptions: { expiresIn: '7d' },
       }),
     }) as never,
-    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     AuthTokenStore,
+    EmailQueueService,
     JwtStrategy,
     ThrottleResendGuard,
     ThrottleForgotGuard,

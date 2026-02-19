@@ -9,10 +9,11 @@ import {
 import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { ConfigService } from '../../shared/config/config.service.js';
 import { AuthTokenStore } from './auth-token.store.js';
-import { EmailService } from '../email/email.service.js';
+import { EmailQueueService } from './email-queue.service.js';
 import type {
   LoginInput,
   RegisterInput,
@@ -34,10 +35,11 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly tokenStore: AuthTokenStore,
-    private readonly email: EmailService
+    private readonly emailQueue: EmailQueueService,
+    private readonly config: ConfigService
   ) {}
 
-  /** Регистрация: создаёт User, отправляет письмо верификации */
+  /** Регистрация: создаёт User, ставит job на отправку письма верификации */
   async register(data: RegisterInput): Promise<{ message: string }> {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     try {
@@ -48,7 +50,10 @@ export class AuthService {
       const tokenHash = hashToken(rawToken);
       await this.tokenStore.invalidateEmailVerificationForUser(user.id);
       await this.tokenStore.setEmailVerificationToken(user.id, tokenHash);
-      await this.email.sendVerificationEmail(user.email, rawToken);
+      const baseUrl = this.config.cfg.server.frontendUrl;
+      const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}`;
+      await this.tokenStore.setPendingVerifyUrl(user.id, verifyUrl);
+      await this.emailQueue.addVerifyEmail(user.id, user.email);
       return {
         message: 'Проверьте почту. Ссылка для подтверждения отправлена.',
       };
@@ -112,7 +117,10 @@ export class AuthService {
     const rawToken = randomBytes(32).toString('base64url');
     const tokenHash = hashToken(rawToken);
     await this.tokenStore.setEmailVerificationToken(user.id, tokenHash);
-    await this.email.sendVerificationEmail(user.email, rawToken);
+    const baseUrl = this.config.cfg.server.frontendUrl;
+    const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}`;
+    await this.tokenStore.setPendingVerifyUrl(user.id, verifyUrl);
+    await this.emailQueue.addVerifyEmail(user.id, user.email);
     return { message: 'Письмо отправлено. Проверьте почту.' };
   }
 
@@ -170,10 +178,14 @@ export class AuthService {
       return { message: 'Если email зарегистрирован, письмо отправлено.' };
     }
     await this.tokenStore.invalidatePasswordResetForUser(user.id);
+    const requestId = randomUUID();
     const rawToken = randomBytes(32).toString('base64url');
     const tokenHash = hashToken(rawToken);
     await this.tokenStore.setPasswordResetToken(user.id, tokenHash);
-    await this.email.sendPasswordResetEmail(user.email, rawToken);
+    const baseUrl = this.config.cfg.server.frontendUrl;
+    const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
+    await this.tokenStore.setPendingResetUrl(requestId, resetUrl);
+    await this.emailQueue.addResetPassword(requestId, user.email);
     return { message: 'Если email зарегистрирован, письмо отправлено.' };
   }
 

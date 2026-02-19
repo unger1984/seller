@@ -5,7 +5,7 @@ SaaS для управления товарами на Ozon и Wildberries. Mult
 ## AI Workflow
 
 - **Перед изменениями:** читать `.cursor/rules/` — правила для API, Prisma, frontend, tenancy
-- Учитывать ESLint и Prettier
+- Учитывать ESLint и Prettier; pre-commit запускает lint-staged (ESLint --fix, Prettier) — см. `.cursor/rules/pre-commit-lint-staged.mdc`
 - Давать конкретные решения для проекта
 - Отвечать на русском
 
@@ -16,6 +16,7 @@ SaaS для управления товарами на Ozon и Wildberries. Mult
 - **Зависимости:** фиксированные версии без `^`, обновления через Renovate/Dependabot
 - **npm:** запрещены `--ignore-scripts` и `--legacy-peer-deps` (см. `.cursor/rules/npm-install.mdc`)
 - **nx:** вызывать через `npx nx` (см. `.cursor/rules/nx-npx.mdc`)
+- **Pre-commit:** husky + lint-staged; коммит блокируется при ошибках ESLint/Prettier
 
 ## Документация
 

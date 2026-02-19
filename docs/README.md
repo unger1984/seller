@@ -23,6 +23,10 @@ npm run dev:worker
 
 При прямом вызове nx используй `npx nx` (например, `npx nx serve api`).
 
+## Pre-commit
+
+При `git commit` запускается **lint-staged**: ESLint --fix и Prettier для staged файлов. При ошибках коммит блокируется. Хуки настраиваются при `npm install` (husky).
+
 ## Структура документации
 
 - [Архитектура](./architecture/overview.md) — модули, bounded contexts, диаграммы

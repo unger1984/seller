@@ -8,7 +8,7 @@ alwaysApply: true
 
 ## Forbidden Flags
 
-- **`--ignore-scripts`** — never use; postinstall/prepare scripts must run (Prisma generate, etc.)
+- **`--ignore-scripts`** — never use; postinstall/prepare scripts must run (Prisma generate, husky Git hooks, etc.)
 - **`--legacy-peer-deps`** — never use; fix peer dependency conflicts properly instead
 
 ## Rationale

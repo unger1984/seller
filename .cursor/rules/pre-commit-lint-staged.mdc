@@ -1,0 +1,29 @@
+---
+description: Pre-commit runs lint-staged (ESLint --fix, Prettier); ensure code passes before commit
+globs: "**/*.{ts,tsx,json}"
+alwaysApply: true
+---
+
+# Pre-commit (lint-staged + husky)
+
+## Requirement
+
+Before suggesting code changes, ensure they pass the pre-commit checks. Do not leave unfixable ESLint errors or Prettier violations.
+
+## What Runs on Commit
+
+1. **husky** — Git hooks; `prepare` script installs hooks on `npm install`
+2. **lint-staged** — runs only on staged files:
+   - `*.{ts,tsx}` → `eslint --fix`, then `prettier --write`
+   - `*.json` → `prettier --write`
+
+## When Editing
+
+- Prefer `type Foo = Bar` over `interface Foo extends Bar {}` if the interface adds no members (avoids `@typescript-eslint/no-empty-object-type`)
+- Follow existing ESLint rules (no-console, unused-vars, etc.)
+- If a file fails pre-commit, fix it; do not suggest `--no-verify` or skipping hooks
+
+## Config
+
+- lint-staged config in root `package.json`
+- Prettier: `prettier.config.cjs` (CommonJS due to `"type":"module"`)

@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
 
 /** Логирует HTTP‑запросы: method, url, statusCode, duration. */
 @Injectable()
 export class HttpLoggingInterceptor implements NestInterceptor {
+  private readonly log = createLogger('HTTP');
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
     const res = context.switchToHttp().getResponse();
@@ -24,7 +26,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         next: () => {
           const statusCode = res.statusCode;
           const duration = Date.now() - start;
-          logger.http(`${method} ${url} ${statusCode} ${duration}ms`, {
+          this.log.http(`${method} ${url} ${statusCode} ${duration}ms`, {
             method,
             url,
             statusCode,
@@ -38,7 +40,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
             ? (err as { status?: number }).status ?? 500
             : 500;
           const duration = Date.now() - start;
-          logger.http(`${method} ${url} ${statusCode} ${duration}ms`, {
+          this.log.http(`${method} ${url} ${statusCode} ${duration}ms`, {
             method,
             url,
             statusCode,

@@ -3,14 +3,17 @@
  * TODO: Ozon/WB API, создание OzonListingIds/WbListingIds.
  */
 import type { Job } from 'bullmq';
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
 import type { PublishListingJobData } from '../queues.js';
+
+const log = createLogger('PublishProcessor');
 
 export async function processPublishListing(job: Job<PublishListingJobData>) {
   const { listingId, companyId } = job.data;
   // Stub
-  logger.info(
-    `[publish-listing] listingId=${listingId} companyId=${companyId}`
-  );
+  log.i(`listingId=${listingId} companyId=${companyId}`, {
+    listingId,
+    companyId,
+  });
   return { status: 'stub' };
 }

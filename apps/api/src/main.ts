@@ -4,7 +4,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
+
+const log = createLogger('App');
 import { AppModule } from './app.module.js';
 import { LoggerService } from './shared/logger/logger.service.js';
 
@@ -18,13 +20,13 @@ async function cleanup() {
 }
 
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down');
+  log.i('SIGINT received, shutting down');
   await cleanup();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down');
+  log.i('SIGTERM received, shutting down');
   await cleanup();
   process.exit(0);
 });
@@ -39,10 +41,10 @@ async function bootstrap() {
     const certPath = path.join(certDir, 'localhost.pem');
     const keyPath = path.join(certDir, 'localhost-key.pem');
     if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-      logger.error(
-        'Сертификаты не найдены. Выполните: npm run certs',
-        { certPath, keyPath }
-      );
+      log.e('Сертификаты не найдены. Выполните: npm run certs', {
+        certPath,
+        keyPath,
+      });
       process.exit(1);
     }
     httpsOptions = {
@@ -79,7 +81,7 @@ async function bootstrap() {
 
   await app.listen(port);
   const scheme = httpsOptions ? 'https' : 'http';
-  logger.info(`${scheme}://localhost:${port}`, { prefix: 'API' });
+  log.i(`${scheme}://localhost:${port}`);
 }
 
 bootstrap();

@@ -6,7 +6,9 @@ import { Worker } from 'bullmq';
 
 const require = createRequire(import.meta.url);
 const Redis = require('ioredis');
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
+
+const log = createLogger('Worker');
 import { QUEUE_NAMES, JOB_NAMES } from './queues.js';
 import { processImportCatalog } from './processors/import.processor.js';
 import { processPublishListing } from './processors/publish.processor.js';
@@ -35,11 +37,11 @@ const worker = new Worker(
 );
 
 worker.on('completed', (job) => {
-  logger.info(`[worker] ${job.name} ${job.id} completed`);
+  log.i(`${job.name} ${job.id} completed`);
 });
 
 worker.on('failed', (job, err) => {
-  logger.error(`[worker] ${job?.name} ${job?.id} failed:`, err);
+  log.e(`${job?.name} ${job?.id} failed:`, err);
 });
 
 let cleaningUp = false;
@@ -52,15 +54,15 @@ async function cleanup() {
 }
 
 process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down worker');
+  log.i('SIGINT received, shutting down worker');
   await cleanup();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down worker');
+  log.i('SIGTERM received, shutting down worker');
   await cleanup();
   process.exit(0);
 });
 
-logger.info('Worker started, listening for jobs');
+log.i('Worker started, listening for jobs');

@@ -8,20 +8,24 @@ alwaysApply: false
 
 ## Winston Only
 
-- Use `logger` from `@seller/shared` for all logging
+- Use `createLogger(label)` from `@seller/shared` for all logging
 - **No** `console.log`, `console.error`, `console.warn`, `console.debug` — banned in backend code
 
 ## Usage
 
 ```typescript
 // ✅ GOOD
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
 
-logger.info('Message');
-logger.error('Failed', error);
-logger.warn('Deprecated', { id });
-logger.debug('Debug data', obj);
+const log = createLogger('MyService');
+log.i('Message');
+log.e('Failed', error);
+log.w('Deprecated', { id });
+log.d('Debug data', obj);
+log.http('GET /api/foo 200 12ms', { method: 'GET', statusCode: 200 });
 ```
+
+API: `log.i()` info, `log.d()` debug, `log.w()` warn, `log.e()` error, `log.http(msg, meta)` access-логи.
 
 ```typescript
 // ❌ BAD

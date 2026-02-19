@@ -4,12 +4,17 @@
  * TODO: origin tracking (hash comparison), API вызовы.
  */
 import type { Job } from 'bullmq';
-import { logger } from '@seller/shared';
+import { createLogger } from '@seller/shared';
 import type { SyncStockJobData } from '../queues.js';
+
+const log = createLogger('SyncStockProcessor');
 
 export async function processSyncStock(job: Job<SyncStockJobData>) {
   const { listingId, companyId } = job.data;
   // Stub
-  logger.info(`[sync-stock] listingId=${listingId} companyId=${companyId}`);
+  log.i(`listingId=${listingId} companyId=${companyId}`, {
+    listingId,
+    companyId,
+  });
   return { status: 'stub' };
 }

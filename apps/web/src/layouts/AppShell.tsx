@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { NavLink, Link, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/model/authStore';
+import { useClickOutside } from '@/shared/hooks/useClickOutside';
 import { apiFetch } from '@/shared/api';
 import { Logo } from '@/shared/ui/Logo';
 
@@ -36,14 +37,7 @@ function ProfileDropdown() {
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const onOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener('click', onOutside);
-    return () => document.removeEventListener('click', onOutside);
-  }, []);
+  useClickOutside(ref, () => setOpen(false));
 
   const handleSelectCompany = async (companyId: string) => {
     if (!token || companyId === user?.activeCompanyId) {

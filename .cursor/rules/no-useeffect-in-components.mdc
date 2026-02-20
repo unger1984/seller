@@ -1,0 +1,63 @@
+---
+description: useEffect только в хуках бизнес-логики, не в компонентах
+globs: apps/web/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# useEffect — только в хуках
+
+## Правило
+
+В **компонентах** (React-компоненты, страницы, UI-формы) — **не использовать** `useEffect`. Выносить всю side-effect логику в кастомные хуки.
+
+В **хуках** (custom hooks) — `useEffect` допустим, там живёт бизнес-логика и подписки.
+
+## Зачем
+
+- Компоненты остаются декларативными и простыми
+- Логика (API, подписки, синхронизация) изолирована в хуках, её легче тестировать
+- Избегаем «размазанной» логики по компонентам
+
+## Примеры
+
+```tsx
+// ❌ BAD — useEffect в компоненте
+function ProfileDropdown() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const onOutside = (e) => { /* ... */ };
+    document.addEventListener('click', onOutside);
+    return () => document.removeEventListener('click', onOutside);
+  }, []);
+  return <div ref={ref}>...</div>;
+}
+
+// ✅ GOOD — useEffect в хуке
+function useClickOutside(ref: RefObject<HTMLElement>, onOutside: () => void) {
+  useEffect(() => { /* ... */ }, [ref, onOutside]);
+}
+function ProfileDropdown() {
+  const ref = useRef(null);
+  useClickOutside(ref, () => setOpen(false));
+  return <div ref={ref}>...</div>;
+}
+```
+
+```tsx
+// ❌ BAD — загрузка в компоненте
+function VerifyEmailPage() {
+  const [status, setStatus] = useState('loading');
+  useEffect(() => {
+    apiFetch('/auth/verify-email', { /* ... */ })
+      .then(/* ... */);
+  }, [token]);
+  // ...
+}
+
+// ✅ GOOD — в хуке
+function useVerifyEmail(token: string | null) {
+  const [status, setStatus] = useState(/* ... */);
+  useEffect(() => { /* API call */ }, [token]);
+  return { status, error };
+}
+```

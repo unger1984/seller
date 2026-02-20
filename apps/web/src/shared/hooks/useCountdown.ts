@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * Обратный отсчёт в секундах.
@@ -18,7 +18,7 @@ export function useCountdown(
     return () => clearInterval(id);
   }, [seconds]);
 
-  const start = (s: number) => setSeconds(s > 0 ? s : 0);
+  const start = useCallback((s: number) => setSeconds(s > 0 ? s : 0), []);
 
   return [seconds, start];
 }

@@ -1,14 +1,7 @@
 import { Component, type ReactNode } from 'react';
-import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
-} from 'react-router-dom';
-import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/model/authStore';
-import { apiFetch } from '@/shared/api';
+import { useAuthHydration } from '@/features/auth/hooks/useAuthHydration';
 import { Providers } from './providers';
 import { AppShell } from '@/layouts/AppShell';
 import { LoginPage } from '@/pages/login/LoginPage';
@@ -50,50 +43,10 @@ class RouteErrorBoundary extends Component<
 
 /** Корневой компонент: провайдеры + роутинг */
 function AppRoutes() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { user, token, hydrated, requiresCompany, setHydrated } =
-    useAuthStore();
+  const { user, token, hydrated, requiresCompany } = useAuthStore();
 
-  useEffect(() => {
-    const stored = localStorage.getItem('seller_token');
-    if (!stored) {
-      setHydrated();
-      return;
-    }
-    apiFetch('/auth/me', { token: stored })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.id) {
-          const memberships = (data.memberships ?? []) as {
-            companyId: string;
-            companyName: string;
-            role: string;
-            isActive: boolean;
-          }[];
-          const requiresCompany = data.requiresCompany ?? false;
-          useAuthStore.getState().setAuth(
-            {
-              id: data.id,
-              email: data.email,
-              activeCompanyId: data.activeCompanyId ?? null,
-            },
-            stored,
-            memberships,
-            requiresCompany
-          );
-          if (requiresCompany) {
-            navigate('/onboarding/company', { replace: true });
-          } else {
-            navigate('/', { replace: true });
-          }
-        } else {
-          localStorage.removeItem('seller_token');
-        }
-      })
-      .catch(() => localStorage.removeItem('seller_token'))
-      .finally(() => setHydrated());
-  }, [navigate, setHydrated]);
+  useAuthHydration();
 
   if (!hydrated) {
     return (

@@ -1,44 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
-import { useCountdown } from '@/shared/hooks/useCountdown';
-
-const THROTTLE_KEY = 'throttle:forgot';
-
-function getStoredCooldown(email: string): number {
-  try {
-    const raw = sessionStorage.getItem(
-      `${THROTTLE_KEY}:${email.toLowerCase()}`
-    );
-    if (!raw) return 0;
-    const expiresAt = Number(raw);
-    if (expiresAt <= Date.now()) return 0;
-    return Math.ceil((expiresAt - Date.now()) / 1000);
-  } catch {
-    return 0;
-  }
-}
-
-function setStoredCooldown(email: string, retryAfterSeconds: number) {
-  try {
-    sessionStorage.setItem(
-      `${THROTTLE_KEY}:${email.toLowerCase()}`,
-      String(Date.now() + retryAfterSeconds * 1000)
-    );
-  } catch {
-    /* ignore */
-  }
-}
-
-function clearStoredCooldown(email: string) {
-  try {
-    sessionStorage.removeItem(`${THROTTLE_KEY}:${email.toLowerCase()}`);
-  } catch {
-    /* ignore */
-  }
-}
+import {
+  useForgotPasswordCooldown,
+  setStoredCooldown,
+} from '@/features/auth/hooks/useForgotPasswordCooldown';
 
 /** Страница запроса сброса пароля */
 export function ForgotPasswordPage() {
@@ -46,18 +14,7 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [countdown, startCountdown] = useCountdown(0);
-
-  useEffect(() => {
-    if (email && countdown === 0) {
-      const remain = getStoredCooldown(email);
-      if (remain > 0) startCountdown(remain);
-    }
-  }, [email]);
-
-  useEffect(() => {
-    if (countdown === 0 && email) clearStoredCooldown(email);
-  }, [countdown, email]);
+  const { countdown, startCountdown } = useForgotPasswordCooldown(email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

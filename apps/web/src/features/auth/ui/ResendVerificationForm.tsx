@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
-import { useCountdown } from '@/shared/hooks/useCountdown';
+import { useResendVerificationCooldown } from '@/features/auth/hooks/useResendVerificationCooldown';
 
 interface ResendVerificationFormProps {
   initialEmail?: string;
@@ -15,25 +15,9 @@ export function ResendVerificationForm({
   const [email, setEmail] = useState(initialEmail);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [cooldownLoading, setCooldownLoading] = useState(!!initialEmail);
   const [success, setSuccess] = useState(false);
-  const [countdown, startCountdown] = useCountdown(0);
-
-  useEffect(() => {
-    if (!initialEmail) {
-      setCooldownLoading(false);
-      return;
-    }
-    const url = `/auth/resend-verification/cooldown?email=${encodeURIComponent(initialEmail)}`;
-    apiFetch(url)
-      .then((r) => r.json())
-      .then((data: { retryAfterSeconds?: number }) => {
-        const sec = data.retryAfterSeconds ?? 0;
-        if (sec > 0) startCountdown(sec);
-      })
-      .catch(() => {})
-      .finally(() => setCooldownLoading(false));
-  }, [initialEmail]);
+  const { cooldownLoading, countdown, startCountdown } =
+    useResendVerificationCooldown(initialEmail);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

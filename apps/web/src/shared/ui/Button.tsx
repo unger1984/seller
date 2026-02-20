@@ -12,7 +12,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    'inline-flex flex-row flex-nowrap items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
+    'inline-flex flex-row flex-nowrap items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap';
   const variants = {
     primary: 'bg-primary text-white hover:bg-primary-hover',
     secondary:

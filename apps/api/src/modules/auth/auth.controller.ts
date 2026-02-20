@@ -70,6 +70,14 @@ export class AuthController {
     return this.auth.verifyEmail(body as VerifyEmailInput);
   }
 
+  @Get('resend-verification/cooldown')
+  @ApiOperation({ summary: 'Оставшееся время до повторной отправки (сек)' })
+  @ApiQuery({ name: 'email', required: true })
+  async resendCooldown(@Query('email') email: string) {
+    const retryAfterSeconds = await this.auth.getResendCooldown(email ?? '');
+    return { retryAfterSeconds };
+  }
+
   @Post('resend-verification')
   @UseGuards(ThrottleResendGuard)
   @ApiOperation({ summary: 'Повторная отправка письма верификации' })

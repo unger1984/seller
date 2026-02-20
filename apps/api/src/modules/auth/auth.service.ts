@@ -1,4 +1,5 @@
 /** Сервис аутентификации — регистрация, вход, верификация, сброс пароля */
+import { Inject } from '@nestjs/common';
 import {
   BadRequestException,
   ConflictException,
@@ -12,8 +13,13 @@ import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { ConfigService } from '../../shared/config/config.service.js';
+import {
+  REDIS_TOKEN,
+  type RedisClient,
+} from '../../shared/redis/redis.module.js';
 import { AuthTokenStore } from './auth-token.store.js';
 import { EmailQueueService } from './email-queue.service.js';
+
 import type {
   LoginInput,
   RegisterInput,
@@ -23,6 +29,8 @@ import type {
   ResetPasswordInput,
 } from '@seller/shared-types';
 
+const RESEND_THROTTLE_TTL = 60;
+const RESEND_KEY_PREFIX = 'rate:resend:';
 const SALT_ROUNDS = 10;
 
 function hashToken(raw: string): string {
@@ -36,7 +44,8 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly tokenStore: AuthTokenStore,
     private readonly emailQueue: EmailQueueService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    @Inject(REDIS_TOKEN) private readonly redis: RedisClient
   ) {}
 
   /** Регистрация: создаёт User, ставит job на отправку письма верификации */
@@ -54,6 +63,7 @@ export class AuthService {
       const verifyUrl = `${baseUrl}/verify-email?token=${rawToken}`;
       await this.tokenStore.setPendingVerifyUrl(user.id, verifyUrl);
       await this.emailQueue.addVerifyEmail(user.id, user.email);
+      await this.setResendThrottle(user.email);
       return {
         message: 'Проверьте почту. Ссылка для подтверждения отправлена.',
       };
@@ -69,9 +79,12 @@ export class AuthService {
   }
 
   /** Верификация email: токен из письма, выдаёт JWT */
-  async verifyEmail(
-    data: VerifyEmailInput
-  ): Promise<{ accessToken: string; user: UserResponse }> {
+  async verifyEmail(data: VerifyEmailInput): Promise<{
+    accessToken: string;
+    user: UserResponse;
+    memberships: MeResponse['memberships'];
+    requiresCompany?: boolean;
+  }> {
     const tokenHash = hashToken(data.token);
     const userId =
       await this.tokenStore.getUserIdByEmailVerificationToken(tokenHash);
@@ -86,7 +99,16 @@ export class AuthService {
       where: { id: userId },
       include: { companyMembers: { include: { company: true } } },
     });
-    const activeCompanyId = this.resolveActiveCompany(user, undefined);
+    const memberships = user.companyMembers.map((m) => ({
+      companyId: m.companyId,
+      companyName: m.company.name,
+      role: m.role,
+      isActive: m.company.isActive,
+    }));
+    const requiresCompany = memberships.length === 0;
+    const activeCompanyId = requiresCompany
+      ? undefined
+      : (this.resolveActiveCompany(user, undefined) ?? undefined);
     const accessToken = this.jwt.sign({
       sub: user.id,
       email: user.email,
@@ -95,6 +117,8 @@ export class AuthService {
     return {
       accessToken,
       user: this.toUserResponse(user, activeCompanyId),
+      memberships,
+      ...(requiresCompany && { requiresCompany: true }),
     };
   }
 
@@ -124,7 +148,19 @@ export class AuthService {
     return { message: 'Письмо отправлено. Проверьте почту.' };
   }
 
-  /** Вход: проверка emailVerifiedAt, isActive, выдача JWT с memberships */
+  /** Оставшееся время (сек) до возможности повторной отправки — 0 если можно отправить */
+  async getResendCooldown(email: string): Promise<number> {
+    const key = `${RESEND_KEY_PREFIX}${email.trim().toLowerCase()}`;
+    const ttl = await this.redis.ttl(key);
+    return ttl > 0 ? ttl : 0;
+  }
+
+  private async setResendThrottle(email: string): Promise<void> {
+    const key = `${RESEND_KEY_PREFIX}${email.trim().toLowerCase()}`;
+    await this.redis.set(key, '1', 'EX', RESEND_THROTTLE_TTL);
+  }
+
+  /** Вход: проверка emailVerifiedAt, выдача JWT с memberships */
   async login(data: LoginInput, companyId?: string): Promise<LoginResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -142,13 +178,11 @@ export class AuthService {
         'Подтвердите email. Проверьте почту или запросите новое письмо.'
       );
     }
-    if (!user.isActive) {
-      throw new ForbiddenException('Аккаунт не активирован');
-    }
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,
       companyName: m.company.name,
       role: m.role,
+      isActive: m.company.isActive,
     }));
     const requiresCompany = memberships.length === 0;
     const activeCompanyId = requiresCompany
@@ -207,26 +241,46 @@ export class AuthService {
     return { message: 'Пароль изменён. Войдите в систему.' };
   }
 
-  /** Сменить активную компанию */
+  /** Сменить активную компанию: проверка членства, сохранение lastActiveCompanyId */
   async setActiveCompany(
     userId: string,
     companyId: string
-  ): Promise<{ accessToken: string; user: UserResponse }> {
+  ): Promise<{
+    accessToken: string;
+    user: UserResponse;
+    memberships: MeResponse['memberships'];
+  }> {
     const member = await this.prisma.companyMember.findUnique({
       where: { userId_companyId: { userId, companyId } },
-      include: { user: true, company: true },
+      include: {
+        user: {
+          include: { companyMembers: { include: { company: true } } },
+        },
+        company: true,
+      },
     });
     if (!member) {
       throw new UnauthorizedException('Вы не состоите в этой компании');
     }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastActiveCompanyId: companyId },
+    });
     const accessToken = this.jwt.sign({
       sub: member.userId,
       email: member.user.email,
       activeCompanyId: companyId,
     });
+    const memberships = member.user.companyMembers.map((m) => ({
+      companyId: m.companyId,
+      companyName: m.company.name,
+      role: m.role,
+      isActive: m.company.isActive,
+    }));
     return {
       accessToken,
       user: this.toUserResponse(member.user, companyId),
+      memberships,
     };
   }
 
@@ -244,19 +298,16 @@ export class AuthService {
         'Подтвердите email. Проверьте почту или запросите новое письмо.'
       );
     }
-    if (!user.isActive) {
-      throw new ForbiddenException('Аккаунт не активирован');
-    }
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,
       companyName: m.company.name,
       role: m.role,
+      isActive: m.company.isActive,
     }));
     const requiresCompany = memberships.length === 0;
-    let activeCompanyId: string | undefined;
-    if (memberships.length === 1) {
-      activeCompanyId = memberships[0].companyId;
-    }
+    const activeCompanyId = requiresCompany
+      ? undefined
+      : (this.resolveActiveCompany(user, undefined) ?? undefined);
     return {
       ...this.toUserResponse(user, activeCompanyId),
       memberships,
@@ -264,13 +315,18 @@ export class AuthService {
     };
   }
 
+  /** Приоритет: companyId из аргумента, lastActiveCompanyId (если в memberships), иначе первая компания */
   private resolveActiveCompany(
-    user: { companyMembers: { companyId: string }[] },
+    user: {
+      companyMembers: { companyId: string }[];
+      lastActiveCompanyId: string | null;
+    },
     companyId?: string
   ): string | null {
     const ids = user.companyMembers.map((m) => m.companyId);
-    if (companyId && ids.includes(companyId)) {
-      return companyId;
+    if (companyId && ids.includes(companyId)) return companyId;
+    if (user.lastActiveCompanyId && ids.includes(user.lastActiveCompanyId)) {
+      return user.lastActiveCompanyId;
     }
     return ids[0] ?? null;
   }
@@ -296,11 +352,21 @@ export interface UserResponse {
 export interface LoginResponse {
   accessToken: string;
   user: UserResponse;
-  memberships: { companyId: string; companyName: string; role: string }[];
+  memberships: {
+    companyId: string;
+    companyName: string;
+    role: string;
+    isActive: boolean;
+  }[];
   requiresCompany?: boolean;
 }
 
 export interface MeResponse extends UserResponse {
-  memberships: { companyId: string; companyName: string; role: string }[];
+  memberships: {
+    companyId: string;
+    companyName: string;
+    role: string;
+    isActive: boolean;
+  }[];
   requiresCompany?: boolean;
 }

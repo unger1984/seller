@@ -4,65 +4,36 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 
-const THROTTLE_KEY = 'throttle:resend';
-
-function getStoredCooldown(email: string): number {
-  try {
-    const raw = sessionStorage.getItem(
-      `${THROTTLE_KEY}:${email.toLowerCase()}`
-    );
-    if (!raw) return 0;
-    const expiresAt = Number(raw);
-    if (expiresAt <= Date.now()) return 0;
-    return Math.ceil((expiresAt - Date.now()) / 1000);
-  } catch {
-    return 0;
-  }
-}
-
-function setStoredCooldown(email: string, retryAfterSeconds: number) {
-  try {
-    sessionStorage.setItem(
-      `${THROTTLE_KEY}:${email.toLowerCase()}`,
-      String(Date.now() + retryAfterSeconds * 1000)
-    );
-  } catch {
-    /* ignore */
-  }
-}
-
-function clearStoredCooldown(email: string) {
-  try {
-    sessionStorage.removeItem(`${THROTTLE_KEY}:${email.toLowerCase()}`);
-  } catch {
-    /* ignore */
-  }
-}
-
 interface ResendVerificationFormProps {
   initialEmail?: string;
 }
 
-/** Форма «Отправить письмо снова» для верификации email */
+/** Форма «Отправить письмо снова» для верификации email. Cooldown берётся с бэка */
 export function ResendVerificationForm({
   initialEmail = '',
 }: ResendVerificationFormProps) {
   const [email, setEmail] = useState(initialEmail);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cooldownLoading, setCooldownLoading] = useState(!!initialEmail);
   const [success, setSuccess] = useState(false);
   const [countdown, startCountdown] = useCountdown(0);
 
   useEffect(() => {
-    if (initialEmail && countdown === 0) {
-      const remain = getStoredCooldown(initialEmail);
-      if (remain > 0) startCountdown(remain);
+    if (!initialEmail) {
+      setCooldownLoading(false);
+      return;
     }
+    const url = `/auth/resend-verification/cooldown?email=${encodeURIComponent(initialEmail)}`;
+    apiFetch(url)
+      .then((r) => r.json())
+      .then((data: { retryAfterSeconds?: number }) => {
+        const sec = data.retryAfterSeconds ?? 0;
+        if (sec > 0) startCountdown(sec);
+      })
+      .catch(() => {})
+      .finally(() => setCooldownLoading(false));
   }, [initialEmail]);
-
-  useEffect(() => {
-    if (countdown === 0 && email) clearStoredCooldown(email);
-  }, [countdown, email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,14 +51,12 @@ export function ResendVerificationForm({
       if (!res.ok) {
         if (res.status === 429) {
           const retrySec = body.retryAfterSeconds ?? 60;
-          setStoredCooldown(email, retrySec);
           startCountdown(retrySec);
           return;
         }
         throw new Error(body.message ?? 'Ошибка');
       }
       setSuccess(true);
-      setStoredCooldown(email, 60);
       startCountdown(60);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
@@ -95,6 +64,14 @@ export function ResendVerificationForm({
       setLoading(false);
     }
   };
+
+  if (cooldownLoading) {
+    return (
+      <p className="text-gray-600 text-sm">
+        Проверяем возможность повторной отправки...
+      </p>
+    );
+  }
 
   if (countdown > 0) {
     return (

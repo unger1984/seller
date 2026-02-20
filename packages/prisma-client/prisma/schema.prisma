@@ -74,23 +74,27 @@ enum ExternalRefType {
 }
 
 model Company {
-  id             String          @id @default(cuid())
-  name           String          @unique
-  createdAt      DateTime        @default(now()) @map("created_at")
-  members        CompanyMember[]
-  marketAccounts MarketAccount[]
-  products       Product[]
+  id               String          @id @default(cuid())
+  name             String          @unique
+  isActive         Boolean         @default(false) @map("is_active")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  members          CompanyMember[]
+  marketAccounts   MarketAccount[]
+  products         Product[]
+  usersWithLastActive User[]       @relation("LastActiveCompany")
   @@map("companies")
 }
 
 model User {
-  id               String          @id @default(cuid())
-  email            String          @unique
-  passwordHash     String          @map("password_hash")
-  emailVerifiedAt  DateTime?       @map("email_verified_at")
-  isActive         Boolean         @default(false) @map("is_active")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  companyMembers   CompanyMember[]
+  id                   String          @id @default(cuid())
+  email                String          @unique
+  passwordHash         String          @map("password_hash")
+  emailVerifiedAt      DateTime?       @map("email_verified_at")
+  isActive             Boolean         @default(false) @map("is_active")
+  lastActiveCompanyId  String?         @map("last_active_company_id")
+  lastActiveCompany    Company?        @relation("LastActiveCompany", fields: [lastActiveCompanyId], references: [id])
+  createdAt            DateTime        @default(now()) @map("created_at")
+  companyMembers       CompanyMember[]
   @@map("users")
 }
 

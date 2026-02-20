@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/shared/api';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { Input } from '@/shared/ui/Input';
 
-/** Страница создания компании после верификации */
+/** Страница создания компании после верификации (в AppShell, меню неактивно) */
 export function CreateCompanyPage() {
+  const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +37,32 @@ export function CreateCompanyPage() {
         throw new Error(data.message ?? 'Ошибка создания компании');
       }
       setSuccess(true);
+      const meRes = await apiFetch('/auth/me', { token });
+      const meData = (await meRes.json().catch(() => null)) as {
+        id?: string;
+        email?: string;
+        activeCompanyId?: string;
+        memberships?: {
+          companyId: string;
+          companyName: string;
+          role: string;
+          isActive: boolean;
+        }[];
+        requiresCompany?: boolean;
+      } | null;
+      if (meData?.id) {
+        setAuth(
+          {
+            id: meData.id,
+            email: meData.email ?? '',
+            activeCompanyId: meData.activeCompanyId ?? null,
+          },
+          token,
+          meData.memberships ?? [],
+          meData.requiresCompany ?? false
+        );
+        setTimeout(() => navigate('/', { replace: true }), 2000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
     } finally {
@@ -43,13 +72,14 @@ export function CreateCompanyPage() {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto">
+      <div className="w-[28rem] max-w-full mx-auto">
         <Card className="p-8">
           <p className="text-green-600 font-medium">
-            Компания создана. Дождитесь активации аккаунта.
+            Компания создана. Дождитесь активации компании.
           </p>
           <p className="mt-2 text-gray-600 text-sm">
-            Администратор активирует ваш аккаунт. После этого вы сможете войти.
+            Администратор активирует компанию. После этого вы сможете
+            пользоваться системой.
           </p>
         </Card>
       </div>
@@ -57,7 +87,7 @@ export function CreateCompanyPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="w-[28rem] max-w-full mx-auto">
       <Card className="p-8">
         <h1 className="text-xl font-semibold mb-6">Создание компании</h1>
         <p className="text-gray-600 text-sm mb-4">

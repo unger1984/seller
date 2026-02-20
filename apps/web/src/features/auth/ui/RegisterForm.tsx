@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { RegisterInput } from '@seller/shared-types';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
@@ -9,13 +10,19 @@ import { ResendVerificationForm } from './ResendVerificationForm';
 export function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (password !== passwordConfirm) {
+      setError('Пароли не совпадают');
+      return;
+    }
     const data: RegisterInput = { email, password };
     try {
       setLoading(true);
@@ -41,7 +48,22 @@ export function RegisterForm() {
         <p className="text-green-600 text-sm">
           Проверьте почту. Мы отправили ссылку для подтверждения email.
         </p>
-        <ResendVerificationForm initialEmail={email} />
+        <p className="text-sm text-gray-600">
+          <Link to="/login" className="text-primary hover:underline">
+            Войти
+          </Link>
+        </p>
+        {showResend ? (
+          <ResendVerificationForm initialEmail={email} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowResend(true)}
+            className="text-sm text-gray-600 hover:text-gray-900 underline"
+          >
+            Не пришло письмо?
+          </button>
+        )}
       </div>
     );
   }
@@ -61,6 +83,15 @@ export function RegisterForm() {
         label="Пароль"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        required
+        minLength={8}
+        autoComplete="new-password"
+      />
+      <Input
+        type="password"
+        label="Повторите пароль"
+        value={passwordConfirm}
+        onChange={(e) => setPasswordConfirm(e.target.value)}
         required
         minLength={8}
         autoComplete="new-password"

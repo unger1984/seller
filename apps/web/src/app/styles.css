@@ -1,5 +1,18 @@
 @import 'tailwindcss';
 
+/* Кликабельные элементы — курсор pointer, disabled — not-allowed */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  a[href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
 @theme {
   --color-primary: #005bff;
   --color-primary-hover: #0047cc;

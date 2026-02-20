@@ -1,4 +1,11 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Component, type ReactNode } from 'react';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { apiFetch } from '@/shared/api';
@@ -10,13 +17,43 @@ import { VerifyEmailPage } from '@/pages/verify-email/VerifyEmailPage';
 import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/reset-password/ResetPasswordPage';
 import { CreateCompanyPage } from '@/pages/onboarding/CreateCompanyPage';
-import { SelectCompanyPage } from '@/pages/onboarding/SelectCompanyPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+
+/** Ловит падения дочерних компонентов, чтобы не было белого экрана */
+class RouteErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    /* Fallback UI показан в render */
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+          <p className="text-red-600">
+            Что-то пошло не так. Обновите страницу.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /** Корневой компонент: провайдеры + роутинг */
 function AppRoutes() {
   const navigate = useNavigate();
-  const { user, token, hydrated, setAuth, setHydrated } = useAuthStore();
+  const location = useLocation();
+  const { user, token, hydrated, requiresCompany, setHydrated } =
+    useAuthStore();
 
   useEffect(() => {
     const stored = localStorage.getItem('seller_token');
@@ -28,25 +65,27 @@ function AppRoutes() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.id) {
+          const memberships = (data.memberships ?? []) as {
+            companyId: string;
+            companyName: string;
+            role: string;
+            isActive: boolean;
+          }[];
+          const requiresCompany = data.requiresCompany ?? false;
           useAuthStore.getState().setAuth(
             {
               id: data.id,
               email: data.email,
               activeCompanyId: data.activeCompanyId ?? null,
             },
-            stored
+            stored,
+            memberships,
+            requiresCompany
           );
-          if (data.requiresCompany) {
+          if (requiresCompany) {
             navigate('/onboarding/company', { replace: true });
-            return;
-          }
-          if ((data.memberships?.length ?? 0) > 1 && !data.activeCompanyId) {
-            navigate('/onboarding/select-company', { replace: true });
-            return;
-          }
-          if ((data.memberships?.length ?? 0) === 1 && !data.activeCompanyId) {
+          } else {
             navigate('/', { replace: true });
-            return;
           }
         } else {
           localStorage.removeItem('seller_token');
@@ -54,7 +93,7 @@ function AppRoutes() {
       })
       .catch(() => localStorage.removeItem('seller_token'))
       .finally(() => setHydrated());
-  }, [navigate, setAuth, setHydrated]);
+  }, [navigate, setHydrated]);
 
   if (!hydrated) {
     return (
@@ -64,28 +103,50 @@ function AppRoutes() {
     );
   }
 
+  // requireCompany + на / — редирект до рендера Routes, чтобы не мелькал Dashboard
+  if (user && token && requiresCompany && location.pathname === '/') {
+    return <Navigate to="/onboarding/company" replace />;
+  }
+
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          user && token ? <AppShell /> : <Navigate to="/login" replace />
-        }
-      >
-        <Route index element={<DashboardPage />} />
-        <Route path="onboarding/company" element={<CreateCompanyPage />} />
+    <RouteErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
-          path="onboarding/select-company"
-          element={<SelectCompanyPage />}
-        />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          path="/"
+          element={
+            user && token ? <AppShell /> : <Navigate to="/login" replace />
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="settings" element={<DashboardPage />} />
+          <Route path="offers" element={<DashboardPage />} />
+          <Route path="documents" element={<DashboardPage />} />
+          <Route path="training" element={<DashboardPage />} />
+          <Route path="api-integrations" element={<DashboardPage />} />
+          <Route path="b2b" element={<DashboardPage />} />
+          <Route
+            path="onboarding/company"
+            element={
+              requiresCompany ? (
+                <CreateCompanyPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="onboarding/add-company"
+            element={<CreateCompanyPage />}
+          />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </RouteErrorBoundary>
   );
 }
 

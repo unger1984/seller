@@ -95,7 +95,7 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm">
+      <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
         <h1 className="text-xl font-semibold mb-6">Забыли пароль?</h1>
         {success && showForm ? (
           <div className="space-y-4 max-w-sm">

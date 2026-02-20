@@ -48,7 +48,7 @@ export function ResetPasswordPage() {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
+        <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
           <h1 className="text-xl font-semibold mb-6">Ссылка недействительна</h1>
           <p className="text-gray-600 text-sm mb-4">
             Перейдите по ссылке из письма или запросите сброс пароля снова.
@@ -64,7 +64,7 @@ export function ResetPasswordPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
+        <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
           <p className="text-green-600 font-medium">Пароль изменён</p>
           <p className="mt-2 text-gray-600 text-sm">
             Войдите в систему. Перенаправление...
@@ -76,7 +76,7 @@ export function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm">
+      <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
         <h1 className="text-xl font-semibold mb-6">Новый пароль</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
           <Input

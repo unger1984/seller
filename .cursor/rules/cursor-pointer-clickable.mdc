@@ -1,0 +1,28 @@
+---
+description: Курсор pointer на кликабельных элементах (кнопки, ссылки)
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Курсор на кликабельных элементах
+
+Кнопки, ссылки и прочие кликабельные элементы должны иметь `cursor: pointer`.
+
+## Реализация
+
+- **Button**: уже включает `cursor-pointer` (disabled — `cursor-not-allowed`).
+- **Глобально** (styles.css): `button`, `[role="button"]`, `a[href]` получают `cursor: pointer` через `@layer base`.
+- **Кастомные кликабели** (div, span с onClick): добавлять класс `cursor-pointer`.
+
+## Примеры
+
+```tsx
+// ✅ кнопка
+<Button>Сохранить</Button>
+
+// ✅ div-кнопка
+<div role="button" onClick={handleClick} className="...">Действие</div>
+
+// ✅ кастомный кликабельный элемент
+<span onClick={...} className="cursor-pointer ...">Клик</span>
+```

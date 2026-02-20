@@ -35,9 +35,21 @@ export function VerifyEmailPage() {
           setStatus('error');
           return;
         }
-        const { accessToken, user } = data as {
+        const {
+          accessToken,
+          user,
+          memberships = [],
+          requiresCompany = false,
+        } = data as {
           accessToken: string;
           user: { id: string; email: string; activeCompanyId?: string };
+          memberships?: {
+            companyId: string;
+            companyName: string;
+            role: string;
+            isActive: boolean;
+          }[];
+          requiresCompany?: boolean;
         };
         setAuth(
           {
@@ -45,7 +57,9 @@ export function VerifyEmailPage() {
             email: user.email,
             activeCompanyId: user.activeCompanyId ?? null,
           },
-          accessToken
+          accessToken,
+          memberships,
+          requiresCompany
         );
         setStatus('success');
         setTimeout(
@@ -62,7 +76,7 @@ export function VerifyEmailPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
+        <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
           <p className="text-gray-600">Проверяем ссылку...</p>
         </div>
       </div>
@@ -72,7 +86,7 @@ export function VerifyEmailPage() {
   if (status === 'success') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-sm">
+        <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
           <p className="text-green-600 font-medium">Email подтверждён</p>
           <p className="mt-2 text-gray-600 text-sm">
             Перенаправление на создание компании...
@@ -84,7 +98,7 @@ export function VerifyEmailPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-sm max-w-sm">
+      <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
         <h1 className="text-xl font-semibold mb-6">
           {status === 'no-token' ? 'Ссылка недействительна' : 'Ссылка устарела'}
         </h1>

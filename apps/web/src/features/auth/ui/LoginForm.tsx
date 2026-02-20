@@ -15,7 +15,12 @@ interface LoginFormProps {
 interface LoginResponse {
   accessToken: string;
   user: AuthUser;
-  memberships: { companyId: string; companyName: string; role: string }[];
+  memberships: {
+    companyId: string;
+    companyName: string;
+    role: string;
+    isActive: boolean;
+  }[];
   requiresCompany?: boolean;
 }
 
@@ -36,7 +41,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         email: data.user.email,
         activeCompanyId: data.user.activeCompanyId ?? null,
       },
-      data.accessToken
+      data.accessToken,
+      data.memberships ?? [],
+      data.requiresCompany ?? false
     );
     if (onSuccess) {
       onSuccess();
@@ -44,8 +51,6 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     }
     if (data.requiresCompany) {
       navigate('/onboarding/company', { replace: true });
-    } else if (data.memberships.length > 1 && !data.user.activeCompanyId) {
-      navigate('/onboarding/select-company', { replace: true });
     } else {
       navigate('/', { replace: true });
     }

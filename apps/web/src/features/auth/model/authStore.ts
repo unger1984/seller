@@ -7,6 +7,13 @@ export interface AuthUser {
   activeCompanyId: string | null;
 }
 
+export interface Membership {
+  companyId: string;
+  companyName: string;
+  role: string;
+  isActive: boolean;
+}
+
 interface AuthState {
   /** Текущий пользователь или null при неавторизованном состоянии */
   user: AuthUser | null;
@@ -14,8 +21,17 @@ interface AuthState {
   token: string | null;
   /** Выполнен ли начальный чек сессии (чтение токена из storage) */
   hydrated: boolean;
-  /** Установить данные авторизации после успешного логина */
-  setAuth: (user: AuthUser, token: string) => void;
+  /** Членства в компаниях (из login/me/setActiveCompany) */
+  memberships: Membership[];
+  /** Нужно создать компанию (memberships.length === 0) */
+  requiresCompany: boolean;
+  /** Установить данные авторизации после успешного логина/me/setActiveCompany */
+  setAuth: (
+    user: AuthUser,
+    token: string,
+    memberships?: Membership[],
+    requiresCompany?: boolean
+  ) => void;
   /** Выйти из системы */
   logout: () => void;
   /** Пометить hydrated после чтения токена */
@@ -28,15 +44,22 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   hydrated: false,
+  memberships: [],
+  requiresCompany: false,
 
-  setAuth: (user, token) => {
+  setAuth: (user, token, memberships = [], requiresCompany = false) => {
     localStorage.setItem(TOKEN_KEY, token);
-    set({ user, token });
+    set({
+      user,
+      token,
+      memberships,
+      requiresCompany,
+    });
   },
 
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
-    set({ user: null, token: null });
+    set({ user: null, token: null, memberships: [], requiresCompany: false });
   },
 
   setHydrated: () => set({ hydrated: true }),

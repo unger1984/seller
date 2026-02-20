@@ -6,7 +6,7 @@ import { Card } from '@/shared/ui/Card';
 export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md p-8 rounded-xl shadow-lg">
+      <Card className="w-[28rem] max-w-full p-8 rounded-xl shadow-lg">
         <h1 className="text-2xl font-semibold text-gray-900 mb-1">Seller</h1>
         <p className="text-gray-500 mb-6">Вход</p>
         <LoginForm />

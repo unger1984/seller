@@ -138,7 +138,9 @@ describe('EmailProcessor', () => {
 
   describe('unknown job', () => {
     it('игнорирует неизвестный job name', async () => {
-      const job = mockJob('unknown-job', {});
+      const job = mockJob('unknown-job', {}) as Job<
+        VerifyEmailJobData | ResetPasswordJobData
+      >;
       await processor.process(job);
       expect(redis.get).not.toHaveBeenCalled();
       expect(emailService.sendVerificationEmail).not.toHaveBeenCalled();

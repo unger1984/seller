@@ -38,7 +38,7 @@ spec:
       containers:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-import:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: seller-workers-config
@@ -72,7 +72,7 @@ spec:
       containers:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-publish:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: seller-workers-config
@@ -106,7 +106,7 @@ spec:
       containers:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-sync-stock:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: seller-workers-config

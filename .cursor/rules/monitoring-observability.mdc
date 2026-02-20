@@ -1,0 +1,57 @@
+---
+description: Monitoring and observability — Prometheus metrics, Loki logs, low cardinality
+globs: apps/api/**/*.ts, apps/worker-*/**/*.ts, packages/worker-lib/**/*.ts, packages/shared/**/*.ts
+alwaysApply: false
+---
+
+# Monitoring & Observability
+
+## Stack
+
+- **kube-prometheus-stack** — Prometheus, Grafana, Alertmanager
+- **Loki + Alloy** — logs from stdout
+- **BullMQ metrics** — queue lag, failed/completed jobs
+- **Alerts** — OOMKilled, pod restarts, deployment down, queue lag, failed jobs rate
+
+See [stage-monitoring.md](../../docs/runbooks/stage-monitoring.md) and [monitoring-deploy.md](../../docs/runbooks/monitoring-deploy.md).
+
+## Code Changes
+
+When adding or changing code, consider observability:
+
+### New workers / queues
+
+- Export metrics via `prom-client`: `waiting`, `active`, `failed`, `completed`, duration histogram
+- Labels — low cardinality only: `queue`, not `jobId`, not `userId`
+
+```typescript
+// ✅ GOOD
+bull_queue_waiting_jobs{queue="import"}
+
+// ❌ BAD — cardinality explosion
+bull_job_failed_total{jobId="123", userId="456"}
+```
+
+### New errors / critical paths
+
+- Log via `createLogger(label)` from `@seller/shared`
+- Consider adding an alert if the error indicates a system-level failure
+
+### API endpoints
+
+- Access logs — already in place
+- Heavy operations — consider adding metrics (duration, count)
+
+## Cardinality Rules
+
+**Never** use high-cardinality values as labels (Prometheus, Loki):
+
+| Avoid as label | OK as JSON field / log content |
+| -------------- | ------------------------------ |
+| `userId`       | ✓                              |
+| `jobId`        | ✓                              |
+| `requestId`    | ✓                              |
+| `queue`        | — (use as label, low cardinality) |
+| `level`        | — (use as label)               |
+
+High-cardinality labels cause Prometheus/Loki to consume excessive memory and slow down queries.

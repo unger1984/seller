@@ -4,10 +4,22 @@ overview: 'Рекомендации по мониторингу stage: k9s/stern
 todos:
   - id: monitoring-deploy-doc
     content: Создать docs/runbooks/monitoring-deploy.md (развёртывание в новом окружении)
+    status: completed
   - id: runbook-monitoring
     content: Создать docs/runbooks/stage-monitoring.md (использование)
+    status: completed
   - id: rule-observability
     content: Добавить .cursor/rules/monitoring-observability.mdc
+    status: completed
+  - id: bullmq-metrics
+    content: BullMQ /metrics — prom-client, worker-metrics пакет, интеграция в воркеры
+    status: completed
+  - id: prometheus-rules
+    content: PrometheusRule — алерты OOMKilled, restarts, deployment down, queue lag, failed jobs
+    status: completed
+  - id: json-logs
+    content: JSON-логи — LOG_FORMAT=json в logger.winston.ts
+    status: completed
 isProject: false
 ---
 
@@ -58,10 +70,10 @@ k9s -n seller-stage
 
 **kube-prometheus-stack** уже включает **Grafana**. Не дублировать: при добавлении Loki — подключать его как datasource к этой же Grafana.
 
-| Подход | Действие |
-|--------|----------|
-| Ставишь kube-prometheus-stack | Используй встроенную Grafana |
-| Ставишь Loki отдельно | Добавляй datasource в **ту же** Grafana |
+| Подход                        | Действие                                |
+| ----------------------------- | --------------------------------------- |
+| Ставишь kube-prometheus-stack | Используй встроенную Grafana            |
+| Ставишь Loki отдельно         | Добавляй datasource в **ту же** Grafana |
 
 **Анти-паттерн:** несколько Grafana в одном кластере без причины.
 
@@ -71,12 +83,12 @@ k9s -n seller-stage
 
 Stage на одной машине (192.168.1.8). Настройки Loki под single-node:
 
-| Параметр | Значение | Зачем |
-|----------|----------|-------|
-| Режим | single-binary | Все компоненты в одном процессе |
-| Retention | 7–14 дней | Ограничить рост данных |
-| Storage | filesystem | Не S3 на stage |
-| Ресурсы | 256–512MB | Предсказуемое потребление |
+| Параметр  | Значение      | Зачем                           |
+| --------- | ------------- | ------------------------------- |
+| Режим     | single-binary | Все компоненты в одном процессе |
+| Retention | 7–14 дней     | Ограничить рост данных          |
+| Storage   | filesystem    | Не S3 на stage                  |
+| Ресурсы   | 256–512MB     | Предсказуемое потребление       |
 
 Иначе Loki начнёт неожиданно есть диск.
 
@@ -84,10 +96,10 @@ Stage на одной машине (192.168.1.8). Настройки Loki под
 
 По умолчанию Prometheus хранит данные долго. Для stage достаточно:
 
-| Параметр | Значение | Зачем |
-|----------|----------|-------|
-| Retention | 7–15 дней | Ограничить рост |
-| TSDB | Ограничить размер | Иначе через пару месяцев съест диск |
+| Параметр  | Значение          | Зачем                               |
+| --------- | ----------------- | ----------------------------------- |
+| Retention | 7–15 дней         | Ограничить рост                     |
+| TSDB      | Ограничить размер | Иначе через пару месяцев съест диск |
 
 - Официальный **[loki](https://github.com/grafana/loki/tree/main/production/helm/loki)** chart
 - **Alloy** — сбор логов из stdout, отправка в Loki
@@ -115,13 +127,13 @@ flowchart LR
 
 Не «CPU 80%», а то, что сигналит о реальных проблемах воркеров:
 
-| Тип | PromQL идея | Зачем |
-|-----|-------------|-------|
-| OOMKilled | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} > 0` | Очень частая причина падений воркеров |
-| Pod restarts | `increase(kube_pod_container_status_restarts_total[5m]) > 3` | Ловим CrashLoop |
-| Deployment down | `kube_deployment_status_replicas_unavailable > 0` | Воркер не запущен |
-| Queue lag | `bull_queue_waiting_jobs > N` | Зависла очередь |
-| Failed jobs rate | `increase(bull_queue_failed_total[5m]) > X` | Код начал падать |
+| Тип              | PromQL идея                                                                | Зачем                                 |
+| ---------------- | -------------------------------------------------------------------------- | ------------------------------------- |
+| OOMKilled        | `kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} > 0` | Очень частая причина падений воркеров |
+| Pod restarts     | `increase(kube_pod_container_status_restarts_total[5m]) > 3`               | Ловим CrashLoop                       |
+| Deployment down  | `kube_deployment_status_replicas_unavailable > 0`                          | Воркер не запущен                     |
+| Queue lag        | `bull_queue_waiting_jobs > N`                                              | Зависла очередь                       |
+| Failed jobs rate | `increase(bull_queue_failed_total[5m]) > X`                                | Код начал падать                      |
 
 OOMKilled важнее алертов по CPU.
 
@@ -133,7 +145,7 @@ OOMKilled важнее алертов по CPU.
 
 Нужно:
 
-- Добавить **`/metrics`** endpoint (или отдельный порт)
+- Добавить `**/metrics**` endpoint (или отдельный порт)
 - Использовать **prom-client**
 - Отдавать: `waiting`, `active`, `failed`, `completed`, duration histogram
 
@@ -143,8 +155,8 @@ OOMKilled важнее алертов по CPU.
 - **Не** использовать `userId` как label
 - **Не** делать label на каждую ошибку
 
-| Анти-паттерн | Правильно |
-|--------------|-----------|
+| Анти-паттерн                         | Правильно                               |
+| ------------------------------------ | --------------------------------------- |
 | `bull_job_failed_total{jobId="123"}` | `bull_job_failed_total{queue="import"}` |
 
 Иначе Prometheus взорвётся по кардинальности. Labels — только фиксированные, низкокардинальные (`queue`, не `jobId`).
@@ -153,13 +165,13 @@ OOMKilled важнее алертов по CPU.
 
 ## 7. Рекомендуемый порядок внедрения
 
-| Этап | Что ставим                  | Зачем                                             |
-| ---- | --------------------------- | ------------------------------------------------- |
-| 0    | **k9s** + **stern**         | Быстро смотреть статусы и логи без инфраструктуры |
-| 1    | **kube-prometheus-stack**   | Алерты «упало / рестартится», Grafana для метрик  |
+| Этап | Что ставим                  | Зачем                                                        |
+| ---- | --------------------------- | ------------------------------------------------------------ |
+| 0    | **k9s** + **stern**         | Быстро смотреть статусы и логи без инфраструктуры            |
+| 1    | **kube-prometheus-stack**   | Алерты «упало / рестартится», Grafana для метрик             |
 | 1a   | **BullMQ `/metrics`**       | Экспорт метрик воркеров (иначе алерты queue lag не работают) |
-| 2    | **Loki** + **Alloy**        | История логов, datasource в ту же Grafana        |
-| 3    | (опц.) OTel traces / Sentry | Быстро находить причины ошибок в коде            |
+| 2    | **Loki** + **Alloy**        | История логов, datasource в ту же Grafana                    |
+| 3    | (опц.) OTel traces / Sentry | Быстро находить причины ошибок в коде                        |
 
 ---
 
@@ -189,14 +201,14 @@ OOMKilled важнее алертов по CPU.
 
 **Версионирование Helm — обязательно:**
 
-| Правило | Зачем |
-|---------|-------|
-| `values.yaml` хранится в repo (например `deploy/monitoring/values-*.yaml`) | Воспроизводимость, code review |
-| Не использовать inline `--set` | Конфиг должен быть в файле |
-| Фиксировать версии чартов `--version X.Y.Z` | Иначе через полгода всё разъедется |
+| Правило                                                                    | Зачем                              |
+| -------------------------------------------------------------------------- | ---------------------------------- |
+| `values.yaml` хранится в repo (например `deploy/monitoring/values-*.yaml`) | Воспроизводимость, code review     |
+| Не использовать inline `--set`                                             | Конфиг должен быть в файле         |
+| Фиксировать версии чартов `--version X.Y.Z`                                | Иначе через полгода всё разъедется |
 
-| Анти-паттерн | Правильно |
-|--------------|-----------|
+| Анти-паттерн                                               | Правильно                                                                                 |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `helm install kube-prometheus-stack ...` (без `--version`) | `helm install ... --version X.Y.Z -f deploy/monitoring/kube-prometheus-stack-values.yaml` |
 
 ### 9b. Runbook — как пользоваться

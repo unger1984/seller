@@ -1,0 +1,18 @@
+# Grafana Alloy — сбор логов из stdout, отправка в Loki
+# Helm: grafana/alloy
+# Имя сервиса Loki — проверить: kubectl get svc -n monitoring
+
+configMap:
+  content: |
+    discovery.kubernetes "pods" {
+      role = "pod"
+    }
+    loki.source.kubernetes "logs" {
+      targets    = discovery.kubernetes.pods.targets
+      forward_to = [loki.write.loki.receiver]
+    }
+    loki.write "loki" {
+      endpoint {
+        url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+      }
+    }

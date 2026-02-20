@@ -1,0 +1,58 @@
+# PrometheusRule — алерты для воркеров seller-stage.
+# Требует kube-prometheus-stack (Prometheus Operator с CRD PrometheusRule).
+# Применить: kubectl apply -f deploy/monitoring/prometheus-rules-workers.yaml -n monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: seller-workers-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: seller-workers
+      rules:
+        - alert: WorkerOOMKilled
+          expr: kube_pod_container_status_last_terminated_reason{namespace="seller-stage", reason="OOMKilled"} > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Воркер убит по OOM"
+            description: "Под {{ $labels.pod }} в {{ $labels.namespace }} завершён с OOMKilled. Увеличить memory limit."
+
+        - alert: WorkerPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="seller-stage"}[5m]) > 3
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Воркер часто рестартует"
+            description: "Под {{ $labels.pod }} рестартовал более 3 раз за 5 минут. CrashLoop?"
+
+        - alert: WorkerDeploymentDown
+          expr: kube_deployment_status_replicas_unavailable{namespace="seller-stage"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Deployment воркера недоступен"
+            description: "{{ $labels.deployment }} не имеет доступных реплик."
+
+        - alert: WorkerQueueLag
+          expr: bull_queue_waiting_jobs > 100
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Очередь растёт"
+            description: "Очередь {{ $labels.queue }}: {{ $value }} задач в ожидании."
+
+        - alert: WorkerFailedJobsRate
+          expr: increase(bull_queue_failed_total[5m]) > 10
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Много failed jobs"
+            description: "Очередь {{ $labels.queue }}: {{ $value }} failed за 5 минут."

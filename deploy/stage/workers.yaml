@@ -39,6 +39,9 @@ spec:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-import:latest
           imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9090
           envFrom:
             - configMapRef:
                 name: seller-workers-config
@@ -73,6 +76,9 @@ spec:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-publish:latest
           imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9090
           envFrom:
             - configMapRef:
                 name: seller-workers-config
@@ -107,6 +113,9 @@ spec:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-sync-stock:latest
           imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9090
           envFrom:
             - configMapRef:
                 name: seller-workers-config
@@ -141,6 +150,9 @@ spec:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-email:latest
           imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9090
           envFrom:
             - configMapRef:
                 name: seller-workers-config

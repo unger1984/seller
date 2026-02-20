@@ -17,12 +17,22 @@ function optionalEnv(name: string, defaultValue: string): string {
 }
 
 export function readEmailConfig(): EmailConfig {
+  const useLocalPostfix =
+    optionalEnv('SMTP_USE_LOCAL_POSTFIX', 'false') === 'true';
   const smtp = {
-    host: process.env.SMTP_HOST?.trim() || undefined,
-    port: parseInt(optionalEnv('SMTP_PORT', '587'), 10),
-    secure: optionalEnv('SMTP_SECURE', 'false') === 'true',
-    user: process.env.SMTP_USER?.trim() || undefined,
-    password: process.env.SMTP_PASSWORD?.trim() || undefined,
+    host: useLocalPostfix
+      ? '127.0.0.1'
+      : process.env.SMTP_HOST?.trim() || undefined,
+    port: useLocalPostfix ? 25 : parseInt(optionalEnv('SMTP_PORT', '587'), 10),
+    secure: useLocalPostfix
+      ? false
+      : optionalEnv('SMTP_SECURE', 'false') === 'true',
+    user: useLocalPostfix
+      ? undefined
+      : process.env.SMTP_USER?.trim() || undefined,
+    password: useLocalPostfix
+      ? undefined
+      : process.env.SMTP_PASSWORD?.trim() || undefined,
     from: optionalEnv('SMTP_FROM', 'noreply@seller.local'),
     dryRun: optionalEnv('SMTP_DRY_RUN', 'false') === 'true',
   };

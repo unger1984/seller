@@ -1,5 +1,4 @@
-# ConfigMap: env для воркеров (Redis — внутренний адрес в кластере)
-# worker-email: + FRONTEND_URL, SMTP_* (или в Secret)
+# ConfigMap: env для воркеров (не секреты)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,15 +7,16 @@ metadata:
   labels:
     app: seller-workers
 data:
-  REDIS_URL: "redis://seller-redis:6379"
----
-# Secret не в репо — создать вручную.
-# worker-email не требует DATABASE_URL, нужны SMTP_*, FRONTEND_URL:
-# kubectl create secret generic seller-worker-secret \
-#   --from-literal=DATABASE_URL='postgresql://...' \
-#   --from-literal=FRONTEND_URL='https://...' \
-#   --from-literal=SMTP_HOST='...' --from-literal=SMTP_USER='...' --from-literal=SMTP_PASSWORD='...' \
-#   -n seller-stage
+  REDIS_URL: 'redis://seller-redis:6379'
+  SMTP_USE_LOCAL_POSTFIX: 'false'
+  FRONTEND_URL: '${FRONTEND_URL:-https://localhost:8443}'
+  SMTP_FROM: 'unger1984@gmail.com'
+# Secrets — только пароли. Создать вручную.
+# seller-worker-secret (для import/publish/sync-stock): DATABASE_URL
+# seller-worker-email-secret (для worker-email): SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
+#   Gmail: создать App Password в https://myaccount.google.com/apppasswords
+#   --from-literal=SMTP_HOST=smtp.gmail.com --from-literal=SMTP_PORT=587 \
+#   --from-literal=SMTP_USER=email@gmail.com --from-literal=SMTP_PASSWORD='abcd efgh ijkl mnop'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -46,11 +46,11 @@ spec:
                 name: seller-worker-secret
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: '128Mi'
+              cpu: '100m'
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: '256Mi'
+              cpu: '500m'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -80,11 +80,11 @@ spec:
                 name: seller-worker-secret
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: '128Mi'
+              cpu: '100m'
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: '256Mi'
+              cpu: '500m'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -114,11 +114,11 @@ spec:
                 name: seller-worker-secret
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: '128Mi'
+              cpu: '100m'
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: '256Mi'
+              cpu: '500m'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -140,16 +140,16 @@ spec:
       containers:
         - name: worker
           image: 192.168.1.8:30500/seller/worker-email:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: seller-workers-config
             - secretRef:
-                name: seller-worker-secret
+                name: seller-worker-email-secret
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: '128Mi'
+              cpu: '100m'
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: '256Mi'
+              cpu: '500m'

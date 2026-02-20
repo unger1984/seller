@@ -27,7 +27,9 @@ function buildMailerOptions(config: EmailConfig) {
             smtp.user && smtp.password
               ? { user: smtp.user, pass: smtp.password }
               : undefined,
-          ...(smtp.host === 'localhost' && { ignoreTLS: true }),
+          ...((smtp.host === 'localhost' || smtp.host === '127.0.0.1') && {
+            ignoreTLS: true,
+          }),
         },
     defaults: { from: smtp.from },
     template: {

@@ -30,18 +30,35 @@ kubectl create secret generic seller-postgres-secret \
   --from-literal=POSTGRES_PASSWORD=seller \
   -n seller-stage
 
-# Workers (для деплоя воркеров в k8s)
+# Workers — только пароли
 kubectl create secret generic seller-worker-secret \
   --from-literal=DATABASE_URL='postgresql://seller:seller@seller-postgres:5432/seller' \
   -n seller-stage
+
+# worker-email: SMTP relay (Gmail, SendGrid и т.п.)
+# Gmail: создать App Password — https://myaccount.google.com/apppasswords
+kubectl create secret generic seller-worker-email-secret \
+  --from-literal=SMTP_HOST=smtp.gmail.com \
+  --from-literal=SMTP_PORT=587 \
+  --from-literal=SMTP_USER='email@gmail.com' \
+  --from-literal=SMTP_PASSWORD='abcd efgh ijkl mnop' \
+  -n seller-stage
 ```
 
-Пароль в DATABASE_URL должен совпадать с `seller-postgres-secret`.
+Пароль в DATABASE_URL должен совпадать с `seller-postgres-secret`. FRONTEND_URL и SMTP_FROM — в ConfigMap. worker-email: SMTP_* — relay. Gmail требует App Password (не обычный пароль).
 
 ### Шаг 3. Postgres, Redis, Workers
 
+FRONTEND_URL и SMTP_FROM подставляются из `.env.stage` (или `.env`):
+
 ```bash
-kubectl apply -k deploy/stage/
+npm run deploy:stage
+```
+
+Либо вручную:
+```bash
+set -a && source .env.stage && set +a
+kubectl kustomize deploy/stage | envsubst | kubectl apply -f -
 ```
 
 Поды воркеров будут в `ImagePullBackOff` до появления образов в registry (шаг 6).
@@ -115,6 +132,7 @@ kubectl get pods -n registry
 docker save seller/worker-import:latest | gzip > /tmp/worker-import.tar.gz
 docker save seller/worker-publish:latest | gzip > /tmp/worker-publish.tar.gz
 docker save seller/worker-sync-stock:latest | gzip > /tmp/worker-sync-stock.tar.gz
+docker save seller/worker-email:latest | gzip > /tmp/worker-email.tar.gz
 
 scp /tmp/worker-*.tar.gz 192.168.1.8:/tmp/
 
@@ -122,6 +140,7 @@ scp /tmp/worker-*.tar.gz 192.168.1.8:/tmp/
 sudo k3s ctr images import /tmp/worker-import.tar.gz
 sudo k3s ctr images import /tmp/worker-publish.tar.gz
 sudo k3s ctr images import /tmp/worker-sync-stock.tar.gz
+sudo k3s ctr images import /tmp/worker-email.tar.gz
 rm /tmp/worker-*.tar.gz
 ```
 
@@ -187,7 +206,7 @@ redis-cli -h 192.168.1.8 -p 30379 ping
 | namespace.yaml     | Namespace `seller-stage`            |
 | postgres.yaml      | ConfigMap, PVC, Deployment, Service |
 | redis.yaml         | PVC, Deployment, Service            |
-| workers.yaml       | ConfigMap, 3 Deployment воркеров    |
+| workers.yaml       | ConfigMap, 4 Deployment воркеров     |
 | kustomization.yaml | Kustomize                           |
 
 **NodePort:** Postgres 30032, Redis 30379, Registry 30500.

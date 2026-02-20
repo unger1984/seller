@@ -57,8 +57,8 @@ export class EmailProcessor extends WorkerHost {
       });
       return;
     }
-    await this.redis.del(key);
     await this.emailService.sendVerificationEmail(to, verifyUrl);
+    await this.redis.del(key);
     log.i(`Verify email completed`, {
       jobId: job.id,
       userId,
@@ -77,15 +77,22 @@ export class EmailProcessor extends WorkerHost {
       log.i('Reset: URL уже отправлен или истёк (идемпотентность)', {
         jobId: job.id,
         requestId,
+        key,
       });
       return;
     }
-    await this.redis.del(key);
-    await this.emailService.sendPasswordResetEmail(to, resetUrl);
-    log.i('Reset password email completed', {
-      jobId: job.id,
-      requestId,
-      duration: Date.now() - start,
-    });
+    log.i('Reset: отправка письма', { requestId, to });
+    try {
+      await this.emailService.sendPasswordResetEmail(to, resetUrl);
+      await this.redis.del(key);
+      log.i('Reset password email completed', {
+        jobId: job.id,
+        requestId,
+        duration: Date.now() - start,
+      });
+    } catch (err) {
+      log.e('Reset: ошибка отправки', { requestId, to, err });
+      throw err;
+    }
   }
 }

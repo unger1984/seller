@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { Logo } from '@/shared/ui/Logo';
 import {
   useForgotPasswordCooldown,
   setStoredCooldown,
@@ -53,7 +54,10 @@ export function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
-        <h1 className="text-xl font-semibold mb-6">Забыли пароль?</h1>
+        <h1 className="mb-1">
+          <Logo size="lg" className="justify-center" />
+        </h1>
+        <p className="text-xl font-semibold mb-6">Забыли пароль?</p>
         {success && showForm ? (
           <div className="space-y-4 max-w-sm">
             <p className="text-green-600 text-sm">

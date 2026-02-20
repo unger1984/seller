@@ -11,7 +11,7 @@ export function LoginPage() {
         <h1 className="mb-1">
           <Logo size="lg" className="justify-center" />
         </h1>
-        <p className="text-gray-500 mb-6">Вход</p>
+        <p className="text-xl font-semibold mb-6">Вход</p>
         <LoginForm />
         <p className="mt-6 text-sm text-gray-600">
           Нет аккаунта?{' '}

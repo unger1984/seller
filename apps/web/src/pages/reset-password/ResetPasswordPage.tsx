@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '@/shared/api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
+import { Logo } from '@/shared/ui/Logo';
 
 /** Страница установки нового пароля — token из URL */
 export function ResetPasswordPage() {
@@ -49,7 +50,10 @@ export function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
-          <h1 className="text-xl font-semibold mb-6">Ссылка недействительна</h1>
+          <h1 className="mb-1">
+            <Logo size="lg" className="justify-center" />
+          </h1>
+          <p className="text-xl font-semibold mb-6">Ссылка недействительна</p>
           <p className="text-gray-600 text-sm mb-4">
             Перейдите по ссылке из письма или запросите сброс пароля снова.
           </p>
@@ -65,6 +69,9 @@ export function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
+          <h1 className="mb-1">
+            <Logo size="lg" className="justify-center" />
+          </h1>
           <p className="text-green-600 font-medium">Пароль изменён</p>
           <p className="mt-2 text-gray-600 text-sm">
             Войдите в систему. Перенаправление...
@@ -77,7 +84,10 @@ export function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-[28rem] max-w-full bg-white p-8 rounded-lg shadow-sm">
-        <h1 className="text-xl font-semibold mb-6">Новый пароль</h1>
+        <h1 className="mb-1">
+          <Logo size="lg" className="justify-center" />
+        </h1>
+        <p className="text-xl font-semibold mb-6">Новый пароль</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-sm">
           <Input
             type="password"
@@ -102,11 +112,6 @@ export function ResetPasswordPage() {
             {loading ? 'Сохранение...' : 'Сохранить'}
           </Button>
         </form>
-        <p className="mt-4 text-sm text-gray-600">
-          <Link to="/forgot-password" className="text-primary hover:underline">
-            Запросить новую ссылку
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { apiFetch } from '@/shared/api';
+import { Logo } from '@/shared/ui/Logo';
 
 const navItems = [{ to: '/', label: 'Главная', icon: LayoutDashboard }];
 
@@ -43,10 +44,6 @@ function ProfileDropdown() {
     document.addEventListener('click', onOutside);
     return () => document.removeEventListener('click', onOutside);
   }, []);
-
-  const activeMembership = memberships.find(
-    (m) => m.companyId === user?.activeCompanyId
-  );
 
   const handleSelectCompany = async (companyId: string) => {
     if (!token || companyId === user?.activeCompanyId) {
@@ -202,9 +199,10 @@ export function AppShell() {
             <div className="flex items-center gap-8">
               <NavLink
                 to="/"
-                className="text-xl font-semibold text-gray-900 hover:text-primary transition-colors"
+                className="hover:opacity-85 transition-opacity"
+                aria-label="Seller — на главную"
               >
-                Seller
+                <Logo size="md" />
               </NavLink>
               <nav className="flex gap-1">
                 {navItems.map(({ to, label, icon: Icon }) =>

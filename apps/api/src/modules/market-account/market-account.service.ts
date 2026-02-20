@@ -1,5 +1,6 @@
 /** Сервис аккаунтов маркетплейсов — CRUD, шифрование credentials */
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -34,8 +35,19 @@ export class MarketAccountService {
     });
   }
 
-  /** Создать аккаунт — credentials шифруются */
+  /** Создать аккаунт — credentials шифруются. Максимум один Ozon и один WB на компанию. */
   async create(companyId: string, data: CreateMarketAccountInput) {
+    const existing = await this.prisma.marketAccount.findFirst({
+      where: { companyId, marketplace: data.marketplace as Marketplace },
+    });
+    if (existing) {
+      const msg =
+        data.marketplace === 'OZON'
+          ? 'Ozon уже подключён'
+          : 'Wildberries уже подключён';
+      throw new ConflictException(msg);
+    }
+
     const credentialsJson = JSON.stringify(data.credentials);
     const credentialsEncrypted = this.crypto.encrypt(credentialsJson);
     const credentialsHash = sha256Hash(credentialsJson);

@@ -1,0 +1,43 @@
+---
+description: Agent must agree implementation approach with user before making code changes
+alwaysApply: true
+---
+
+# Agent — Coordinate Code Changes with User
+
+## Requirement
+
+Before making **code changes or additions**, the agent must present the proposed approach and get user agreement, rather than implement immediately.
+
+## What to Coordinate
+
+- What files will be created or modified
+- What the changes will do (API, components, logic)
+- Implementation steps in brief
+
+No need to explain searches, reads, or tool calls — only coordinate before touching code.
+
+## Flow
+
+1. User asks for changes
+2. Agent explores codebase if needed (without lengthy reports)
+3. Agent states: "Предлагаю сделать так: …" — план по пунктам
+4. User confirms or adjusts
+5. Agent implements
+
+## Example
+
+```markdown
+❌ BAD — сразу правит код без согласования
+[User: добавь валидацию имени в создание продукта]
+[Agent: редактирует DTO и контроллер]
+
+✅ GOOD — сначала предлагает, потом правит
+[User: добавь валидацию имени в создание продукта]
+[Agent] Предлагаю:
+1. В CreateProductDto добавить Zod-схему для name (min 1 символ)
+2. Подключить валидацию в ProductsController.create
+OK?
+[User: да]
+[Agent: вносит изменения]
+```

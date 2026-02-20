@@ -43,9 +43,8 @@ export function useAuthHydration() {
             hydrationNavigateDone.current = true;
             if (requiresCompany) {
               navigate('/onboarding/company', { replace: true });
-            } else {
-              navigate('/', { replace: true });
             }
+            // Если компания есть — остаёмся на текущей странице (не редиректим на /)
           }
         } else {
           localStorage.removeItem('seller_token');

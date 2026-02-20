@@ -1,9 +1,14 @@
 import { Component, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { useAuthHydration } from '@/features/auth/hooks/useAuthHydration';
 import { Providers } from './providers';
 import { AppShell } from '@/layouts/AppShell';
+import { SettingsLayout } from '@/pages/settings/SettingsLayout';
+import { CompanySettingsContent } from '@/pages/settings/CompanySettingsContent';
+import { AccountSettingsPlaceholder } from '@/pages/settings/AccountSettingsPlaceholder';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { RegisterPage } from '@/pages/register/RegisterPage';
 import { VerifyEmailPage } from '@/pages/verify-email/VerifyEmailPage';
@@ -76,7 +81,11 @@ function AppRoutes() {
           }
         >
           <Route index element={<DashboardPage />} />
-          <Route path="settings" element={<DashboardPage />} />
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<Navigate to="company" replace />} />
+            <Route path="company" element={<CompanySettingsContent />} />
+            <Route path="account" element={<AccountSettingsPlaceholder />} />
+          </Route>
           <Route path="offers" element={<DashboardPage />} />
           <Route path="documents" element={<DashboardPage />} />
           <Route path="training" element={<DashboardPage />} />
@@ -108,6 +117,11 @@ export function App() {
     <div className="font-sans antialiased">
       <Providers>
         <AppRoutes />
+        <ToastContainer
+          position="top-center"
+          theme="colored"
+          autoClose={2000}
+        />
       </Providers>
     </div>
   );

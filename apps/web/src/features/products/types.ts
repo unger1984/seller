@@ -16,6 +16,7 @@ export interface VariantRow {
   barcodes: string[];
   ozonOfferId: string | null;
   ozonProductId: string | null;
+  ozonSku: string | null;
   wbNmId: string | null;
   primaryImage: string | null;
   placementStatusOzon: string | null;
@@ -29,6 +30,8 @@ export interface VariantRow {
 export interface ProductListItem {
   id: string;
   name: string;
+  nameOzon?: string | null;
+  nameWb?: string | null;
   brand: string | null;
   description: string | null;
   primaryImage: string | null;

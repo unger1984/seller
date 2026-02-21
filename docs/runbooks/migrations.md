@@ -3,35 +3,29 @@
 ## Команды
 
 ```bash
+# Сгенерировать миграцию (сравнение entities со stage-БД, DATABASE_URL из .env.stage)
+npm run db:migration:generate -- packages/typeorm/src/migrations/ИмяМиграции
+
 # Применить миграции (требуется запущенный PostgreSQL)
-npm run db:migrate   # nx build typeorm && typeorm migration:run
+npm run db:migrate
 
 # Stage: через dotenv
-npm run db:migrate:stage   # dotenv -e .env.stage -- npm run db:migrate
+npm run db:migrate:stage
 ```
 
-Перед миграцией: `docker compose up -d postgres` (если БД ещё не запущена).
+Перед генерацией: обновить entities, убедиться что stage-БД доступна. Перед migrate: `docker compose up -d postgres` (если БД локально).
 
 ## Где миграции
 
 - `packages/typeorm/src/migrations/` — TypeScript-миграции
 - DataSource: `packages/typeorm/src/data-source.ts`
-- CLI берёт `DATABASE_URL` из env или использует дефолт `postgresql://seller:seller@localhost:5432/seller`
+- Генерация ориентирована на **stage** (DATABASE_URL из `.env.stage`)
 
 ## COMMENT ON
 
-В каждой миграции добавлять (на русском):
+После генерации — дописать в миграцию (на русском):
 - `COMMENT ON TABLE "table_name" IS '...'`
 - `COMMENT ON COLUMN "table_name"."column_name" IS '...'`
 - `COMMENT ON TYPE "EnumName" IS '...'` — для enum
 
 Значения enum = API-контракт; менять только через миграцию + changelog. См. `.cursor/rules/typeorm-conventions.mdc`.
-
-## Создание новой миграции
-
-```bash
-cd packages/typeorm
-npx typeorm migration:create src/migrations/YYYYMMDDHHMMSS-Name
-```
-
-Заполнить `up()` и `down()`, затем `npm run db:migrate`.

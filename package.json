@@ -31,6 +31,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",
     "db:migrate": "nx build typeorm && cd packages/typeorm && node ../../node_modules/typeorm/cli.js migration:run -d dist/data-source.js",
     "db:migrate:stage": "dotenv -e .env.stage -- npm run db:migrate",
+    "db:migration:generate": "nx build typeorm && dotenv -e .env.stage -- node node_modules/typeorm/cli.js migration:generate -d packages/typeorm/dist/data-source.js",
     "deploy:stage": "./deploy/stage/apply.sh",
     "deploy:workers:stage": "./tooling/scripts/deploy-workers-stage.sh",
     "db:studio": "echo 'Use psql $DATABASE_URL or DBeaver'",
@@ -55,6 +56,7 @@
   },
   "dependencies": {
     "@nestjs/swagger": "11.2.6",
+    "extensionless": "^2.0.6",
     "nestjs-zod": "4.3.1",
     "zod": "3.23.8"
   },

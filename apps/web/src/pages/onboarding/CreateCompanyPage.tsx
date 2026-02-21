@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiFetch } from '@/shared/api';
+import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/model/authStore';
+import { switchActiveCompany } from '@/features/auth/api/auth.api';
+import {
+  createCompany,
+  fetchAuthMe,
+} from '@/features/onboarding/api/companies.api';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { Input } from '@/shared/ui/Input';
@@ -13,78 +18,38 @@ export function CreateCompanyPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!token) return;
-    try {
-      setLoading(true);
-      const res = await apiFetch('/companies', {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-        token,
-      });
-      const data = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) {
-        if (res.status === 409) {
-          throw new Error(
-            data.message ?? 'Такое название уже занято. Выберите другое.'
-          );
-        }
-        throw new Error(data.message ?? 'Ошибка создания компании');
-      }
-      setSuccess(true);
-      const meRes = await apiFetch('/auth/me', { token });
-      const meData = (await meRes.json().catch(() => null)) as {
-        id?: string;
-        email?: string;
-        activeCompanyId?: string;
-        memberships?: {
-          companyId: string;
-          companyName: string;
-          role: string;
-          isActive: boolean;
-        }[];
-        requiresCompany?: boolean;
-      } | null;
-      if (meData?.id && meData.activeCompanyId) {
-        const patchRes = await apiFetch('/auth/me/active-company', {
-          method: 'PATCH',
-          body: JSON.stringify({ companyId: meData.activeCompanyId }),
-          token,
-        });
-        const patchData = (await patchRes.json().catch(() => null)) as {
-          accessToken?: string;
-          user?: { activeCompanyId?: string };
-          memberships?: {
-            companyId: string;
-            companyName: string;
-            role: string;
-            isActive: boolean;
-          }[];
-        } | null;
-        const newToken =
-          patchRes.ok && patchData?.accessToken ? patchData.accessToken : token;
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!token) throw new Error('Нет доступа');
+      await createCompany(name, token);
+      const meData = await fetchAuthMe(token);
+      if (meData.activeCompanyId) {
+        const data = await switchActiveCompany(meData.activeCompanyId, token);
         setAuth(
           {
             id: meData.id,
             email: meData.email ?? '',
-            activeCompanyId: meData.activeCompanyId,
+            activeCompanyId: data.user.activeCompanyId ?? null,
           },
-          newToken,
-          patchData?.memberships ?? meData.memberships ?? [],
+          data.accessToken,
+          data.memberships,
           meData.requiresCompany ?? false
         );
         setTimeout(() => navigate('/', { replace: true }), 2000);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-    } finally {
-      setLoading(false);
-    }
+      return meData;
+    },
+    onSuccess: () => setSuccess(true),
+    onError: (err) =>
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка'),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    createMutation.mutate();
   };
 
   if (success) {
@@ -121,8 +86,8 @@ export function CreateCompanyPage() {
             autoComplete="organization"
           />
           {error && <p className="text-red-600 text-sm">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Создание...' : 'Создать'}
+          <Button type="submit" disabled={createMutation.isPending}>
+            {createMutation.isPending ? 'Создание...' : 'Создать'}
           </Button>
         </form>
       </Card>

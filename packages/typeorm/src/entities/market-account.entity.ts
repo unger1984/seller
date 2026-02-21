@@ -52,4 +52,7 @@ export class MarketAccount {
 
   @OneToMany('ProductWb', 'marketAccount')
   productWbs!: import('./product-wb.entity.js').ProductWb[];
+
+  @OneToMany('Warehouse', 'marketAccount')
+  warehouses!: import('./warehouse.entity.js').Warehouse[];
 }

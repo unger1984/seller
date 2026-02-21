@@ -1,5 +1,6 @@
 /**
  * Модуль worker-import: BullMQ + ImportProcessor.
+ * Импортирует ImportModule (WbImportService, OzonImportService) и IntegrationsModule (фабрики API).
  */
 import { createRequire } from 'node:module';
 import { Module } from '@nestjs/common';
@@ -7,17 +8,10 @@ import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { createLogger } from '@seller/shared';
 import { QUEUE_NAMES } from '@seller/domain';
-import {
-  SellerTypeOrmModule,
-  MarketAccount,
-  Product,
-  ProductOzon,
-  ProductWb,
-} from '@seller/typeorm';
-import { ImportProcessor } from './import.processor.js';
-import { OzonImportService } from './services/ozon-import.service.js';
-import { WbImportService } from './services/wb-import.service.js';
-import { WORKER_REDIS_TOKEN } from './tokens.js';
+import { SellerTypeOrmModule, MarketAccount } from '@seller/typeorm';
+import { ImportModule } from './modules/import/import.module';
+import { ImportProcessor } from './modules/import/import.processor';
+import { WORKER_REDIS_TOKEN } from './shared/tokens';
 
 const log = createLogger('WorkerImportModule');
 const require = createRequire(import.meta.url);
@@ -34,6 +28,7 @@ function getRedisConnection(): InstanceType<typeof Redis> {
 
 @Module({
   imports: [
+    ImportModule,
     SellerTypeOrmModule.forRootAsync({
       useFactory: () => ({
         databaseUrl:
@@ -51,7 +46,7 @@ function getRedisConnection(): InstanceType<typeof Redis> {
         backoff: { type: 'exponential', delay: 30_000 },
       },
     }),
-    TypeOrmModule.forFeature([MarketAccount, Product, ProductOzon, ProductWb]),
+    TypeOrmModule.forFeature([MarketAccount]),
   ],
   providers: [
     {
@@ -65,8 +60,6 @@ function getRedisConnection(): InstanceType<typeof Redis> {
         return conn;
       },
     },
-    OzonImportService,
-    WbImportService,
     ImportProcessor,
   ],
   exports: [WORKER_REDIS_TOKEN],

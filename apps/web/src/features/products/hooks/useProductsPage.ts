@@ -1,94 +1,86 @@
-import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/shared/api';
+import { useState, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toastError, toastSuccess } from '@/shared/ui';
 import { useAuthStore } from '@/features/auth/model/authStore';
 import { useSyncImportStatus } from '@/features/sync/hooks/useSyncImportStatus';
-import type { Marketplace, MarketAccountDto, ProductListItem } from '../types';
-
-interface ProductsResponse {
-  items: ProductListItem[];
-  total: number;
-  page: number;
-  limit: number;
-}
+import { queryKeys } from '@/shared/api';
+import {
+  fetchProducts,
+  fetchAccounts,
+  startImport,
+  clearCatalog,
+  createProduct,
+  updateProductOzonMarket,
+  updateProductWbMarket,
+} from '../api';
+import type { Marketplace } from '../types';
 
 const PRODUCTS_LIMIT = 50;
 
 export function useProductsPage() {
+  const queryClient = useQueryClient();
   const companyId = useAuthStore((s) => s.user?.activeCompanyId);
   const token = useAuthStore((s) => s.token);
-  const [accounts, setAccounts] = useState<MarketAccountDto[]>([]);
-  const [products, setProducts] = useState<ProductListItem[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  useLayoutEffect(() => setPage(1), [search]);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const fetchProducts = useCallback(async () => {
-    if (!companyId || !token) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(PRODUCTS_LIMIT),
-      });
-      if (search.trim()) params.set('search', search.trim());
-      const res = await apiFetch(`/companies/${companyId}/products?${params}`, {
-        token,
-      });
-      if (res.ok) {
-        const data = (await res.json()) as ProductsResponse;
-        setProducts(data.items);
-        setTotal(data.total);
-      }
-    } catch {
-      toastError('Не удалось загрузить товары');
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, token, page, search]);
+  const productsQuery = useQuery({
+    queryKey: queryKeys.products(companyId ?? '', page, search),
+    queryFn: () =>
+      fetchProducts(companyId!, token!, {
+        page,
+        limit: PRODUCTS_LIMIT,
+        search: search || undefined,
+      }),
+    enabled: !!companyId && !!token,
+  });
 
-  const { importStatus, setImporting: setImportStatus } = useSyncImportStatus(
-    companyId ?? null,
-    token ?? null,
-    { onImportDone: fetchProducts }
-  );
+  const accountsQuery = useQuery({
+    queryKey: queryKeys.accounts(companyId ?? ''),
+    queryFn: () => fetchAccounts(companyId!, token!),
+    enabled: !!companyId && !!token,
+  });
 
+  const invalidateProducts = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.products(companyId ?? '', page, search),
+    });
+  }, [queryClient, companyId, page, search]);
+
+  const {
+    importStatus,
+    setImporting: setImportStatus,
+    fetchStatus,
+  } = useSyncImportStatus(companyId ?? null, token ?? null, {
+    onImportDone: invalidateProducts,
+  });
+
+  useEffect(() => {
+    if (productsQuery.isError) toastError('Не удалось загрузить товары');
+  }, [productsQuery.isError]);
+  useEffect(() => {
+    if (accountsQuery.isError) toastError('Не удалось загрузить аккаунты');
+  }, [accountsQuery.isError]);
+
+  const accounts = accountsQuery.data ?? [];
+  const products = productsQuery.data?.items ?? [];
+  const total = productsQuery.data?.total ?? 0;
   const hasOzon = accounts.some((a) => a.marketplace === 'OZON');
   const hasWb = accounts.some((a) => a.marketplace === 'WILDBERRIES');
   const ozonAccount = accounts.find((a) => a.marketplace === 'OZON');
   const wbAccount = accounts.find((a) => a.marketplace === 'WILDBERRIES');
 
-  const fetchAccounts = useCallback(async () => {
-    if (!companyId || !token) return;
-    try {
-      const res = await apiFetch(`/companies/${companyId}/accounts`, {
-        token,
-      });
-      if (res.ok) {
-        const data = (await res.json()) as MarketAccountDto[];
-        setAccounts(data);
-      }
-    } catch {
-      toastError('Не удалось загрузить аккаунты');
-    }
-  }, [companyId, token]);
-
-  useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const importMutation = useMutation({
+    mutationFn: ({
+      marketAccountId,
+      token: t,
+    }: {
+      marketAccountId: string;
+      token: string;
+    }) => startImport(companyId!, marketAccountId, t),
+  });
 
   const handleImport = useCallback(
     async (marketplace: Marketplace) => {
@@ -97,27 +89,42 @@ export function useProductsPage() {
       if (!account) return;
       setImportStatus(account.id, true);
       try {
-        const res = await apiFetch(`/companies/${companyId}/sync/import`, {
-          method: 'POST',
-          body: JSON.stringify({ marketAccountId: account.id }),
+        await importMutation.mutateAsync({
+          marketAccountId: account.id,
           token,
         });
-        if (!res.ok) {
-          setImportStatus(account.id, false);
-          const err = (await res.json().catch(() => ({}))) as {
-            message?: string;
-          };
-          throw new Error(err.message ?? 'Ошибка запуска импорта');
-        }
         const label = marketplace === 'OZON' ? 'Ozon' : 'Wildberries';
         toastSuccess(`Импорт с ${label} запущен`);
+        // WB и быстрые импорты могут завершиться до первого polling (3 c) — сразу проверяем статус
+        void fetchStatus();
       } catch (err) {
         setImportStatus(account.id, false);
         toastError(err instanceof Error ? err.message : 'Ошибка импорта');
       }
     },
-    [companyId, token, ozonAccount, wbAccount, setImportStatus]
+    [
+      companyId,
+      token,
+      ozonAccount,
+      wbAccount,
+      setImportStatus,
+      fetchStatus,
+      importMutation,
+    ]
   );
+
+  const clearMutation = useMutation({
+    mutationFn: () => clearCatalog(companyId!, token!),
+    onSuccess: (data) => {
+      toastSuccess(`Удалено товаров: ${data.deleted}`);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.products(companyId ?? '', page, search),
+      });
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : 'Ошибка очистки');
+    },
+  });
 
   const handleClearCatalog = useCallback(async () => {
     if (!companyId || !token) return;
@@ -128,52 +135,80 @@ export function useProductsPage() {
     ) {
       return;
     }
-    try {
-      const res = await apiFetch(`/companies/${companyId}/products/clear`, {
-        method: 'POST',
-        token,
+    clearMutation.mutate();
+  }, [companyId, token, clearMutation]);
+
+  const createMutation = useMutation({
+    mutationFn: (payload: { name: string; brand?: string }) =>
+      createProduct(companyId!, payload, token!),
+    onSuccess: () => {
+      toastSuccess('Товар добавлен');
+      setAddModalOpen(false);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.products(companyId ?? '', page, search),
       });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as {
-          message?: string;
-        };
-        throw new Error(err.message ?? 'Ошибка очистки');
-      }
-      const data = (await res.json()) as { deleted: number };
-      toastSuccess(`Удалено товаров: ${data.deleted}`);
-      fetchProducts();
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Ошибка очистки');
-    }
-  }, [companyId, token, fetchProducts]);
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : 'Ошибка создания');
+    },
+  });
 
   const handleCreateProduct = useCallback(
     async (name: string, brand?: string) => {
       if (!companyId || !token) return;
-      try {
-        const res = await apiFetch(`/companies/${companyId}/products`, {
-          method: 'POST',
-          body: JSON.stringify({ name, brand: brand || undefined }),
-          token,
-        });
-        if (!res.ok) {
-          const err = (await res.json().catch(() => ({}))) as {
-            message?: string;
-          };
-          throw new Error(
-            Array.isArray(err.message)
-              ? err.message.join('\n')
-              : (err.message ?? 'Ошибка создания')
-          );
-        }
-        toastSuccess('Товар добавлен');
-        setAddModalOpen(false);
-        fetchProducts();
-      } catch (err) {
-        toastError(err instanceof Error ? err.message : 'Ошибка создания');
-      }
+      await createMutation.mutateAsync({ name, brand: brand || undefined });
     },
-    [companyId, token, fetchProducts]
+    [companyId, token, createMutation]
+  );
+
+  const updateOzonMarketMutation = useMutation({
+    mutationFn: ({
+      productId,
+      payload,
+    }: {
+      productId: string;
+      payload: { price?: number; stock?: number };
+    }) => updateProductOzonMarket(companyId!, productId, payload, token!),
+    onSuccess: () => {
+      toastSuccess('Сохранено');
+      invalidateProducts();
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : 'Ошибка');
+    },
+  });
+
+  const handleUpdateOzonMarket = useCallback(
+    async (productId: string, payload: { price?: number; stock?: number }) => {
+      if (!companyId || !token) return;
+      await updateOzonMarketMutation.mutateAsync({ productId, payload });
+    },
+    [companyId, token, updateOzonMarketMutation]
+  );
+
+  const updateWbMarketMutation = useMutation({
+    mutationFn: ({
+      productId,
+      payload,
+    }: {
+      productId: string;
+      payload: { price?: number; stock?: number };
+    }) => updateProductWbMarket(companyId!, productId, payload, token!),
+    onSuccess: () => {
+      toastSuccess('Сохранено');
+      invalidateProducts();
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : 'Ошибка');
+    },
+  });
+
+  const handleUpdateWbMarket = useCallback(
+    async (productId: string, payload: { price?: number; stock?: number }) => {
+      if (!companyId || !token) return;
+      await updateWbMarketMutation.mutateAsync({ productId, payload });
+    },
+    [companyId, token, updateWbMarketMutation]
   );
 
   return {
@@ -185,7 +220,7 @@ export function useProductsPage() {
     setPage,
     search,
     setSearch,
-    loading,
+    loading: productsQuery.isLoading,
     importStatus,
     addModalOpen,
     setAddModalOpen,
@@ -194,5 +229,7 @@ export function useProductsPage() {
     handleImport,
     handleClearCatalog,
     handleCreateProduct,
+    handleUpdateOzonMarket,
+    handleUpdateWbMarket,
   };
 }

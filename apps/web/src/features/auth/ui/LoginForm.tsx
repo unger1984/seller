@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import type { LoginInput } from '@seller/shared-types';
 import type { AuthUser } from '../model/authStore';
 import { useAuthStore } from '../model/authStore';
-import { apiFetch } from '@/shared/api';
+import { login } from '../api/auth.api';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { ResendVerificationForm } from './ResendVerificationForm';
@@ -30,59 +31,42 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const handleSuccess = (data: LoginResponse) => {
-    setAuth(
-      {
-        id: data.user.id,
-        email: data.user.email,
-        activeCompanyId: data.user.activeCompanyId ?? null,
-      },
-      data.accessToken,
-      data.memberships ?? [],
-      data.requiresCompany ?? false
-    );
-    if (onSuccess) {
-      onSuccess();
-      return;
-    }
-    if (data.requiresCompany) {
-      navigate('/onboarding/company', { replace: true });
-    } else {
-      navigate('/', { replace: true });
-    }
-  };
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginInput) => login(data),
+    onSuccess: (data: LoginResponse) => {
+      setAuth(
+        {
+          id: data.user.id,
+          email: data.user.email,
+          activeCompanyId: data.user.activeCompanyId ?? null,
+        },
+        data.accessToken,
+        data.memberships ?? [],
+        data.requiresCompany ?? false
+      );
+      if (onSuccess) {
+        onSuccess();
+        return;
+      }
+      if (data.requiresCompany) {
+        navigate('/onboarding/company', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    },
+    onError: (err: Error & { showResend?: boolean }) => {
+      setError(err.message);
+      if (err.showResend) setShowResend(true);
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const data: LoginInput = { email, password };
-    try {
-      setLoading(true);
-      const res = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-      const json = (await res.json()) as LoginResponse | { message: string };
-      if (!res.ok) {
-        const msg = 'message' in json ? json.message : 'Ошибка входа';
-        if (
-          res.status === 403 &&
-          (msg.includes('Подтвердите email') || msg.includes('email'))
-        ) {
-          setShowResend(true);
-        }
-        throw new Error(msg);
-      }
-      handleSuccess(json as LoginResponse);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
-    } finally {
-      setLoading(false);
-    }
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -110,8 +94,8 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           </Link>
         </p>
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Вход...' : 'Войти'}
+        <Button type="submit" disabled={loginMutation.isPending}>
+          {loginMutation.isPending ? 'Вход...' : 'Войти'}
         </Button>
       </form>
       {showResend && (

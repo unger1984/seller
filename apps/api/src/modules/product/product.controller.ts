@@ -21,6 +21,8 @@ import {
   CreateVariantSchema,
   UpdateVariantSchema,
   AddBarcodeSchema,
+  UpdateProductOzonMarketSchema,
+  UpdateProductWbMarketSchema,
 } from '@seller/shared-types';
 import type {
   CreateProductInput,
@@ -29,6 +31,8 @@ import type {
   CreateVariantInput,
   UpdateVariantInput,
   AddBarcodeInput,
+  UpdateProductOzonMarketInput,
+  UpdateProductWbMarketInput,
 } from '@seller/shared-types';
 import { ProductService } from './product.service.js';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard.js';
@@ -49,6 +53,12 @@ class UpdateVariantDto extends createZodDto(
   UpdateVariantSchema as z.ZodTypeAny
 ) {}
 class AddBarcodeDto extends createZodDto(AddBarcodeSchema as z.ZodTypeAny) {}
+class UpdateProductOzonMarketDto extends createZodDto(
+  UpdateProductOzonMarketSchema as z.ZodTypeAny
+) {}
+class UpdateProductWbMarketDto extends createZodDto(
+  UpdateProductWbMarketSchema as z.ZodTypeAny
+) {}
 
 @ApiTags('products')
 @Controller('companies/:companyId/products')
@@ -107,6 +117,42 @@ export class ProductController {
     const companyId = req.user?.activeCompanyId;
     if (!companyId) throw new Error('Active company not set');
     return this.service.getById(companyId, id);
+  }
+
+  @Patch(':id/market/ozon')
+  @ApiOperation({ summary: 'Обновить цену/остаток Ozon' })
+  @ApiBody({ type: UpdateProductOzonMarketDto })
+  async updateProductOzonMarket(
+    @Param('companyId') _companyId: string,
+    @Param('id') productId: string,
+    @Body() body: UpdateProductOzonMarketDto,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.updateProductOzonMarket(
+      companyId,
+      productId,
+      body as UpdateProductOzonMarketInput
+    );
+  }
+
+  @Patch(':id/market/wb')
+  @ApiOperation({ summary: 'Обновить цену/остаток WB' })
+  @ApiBody({ type: UpdateProductWbMarketDto })
+  async updateProductWbMarket(
+    @Param('companyId') _companyId: string,
+    @Param('id') productId: string,
+    @Body() body: UpdateProductWbMarketDto,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.updateProductWbMarket(
+      companyId,
+      productId,
+      body as UpdateProductWbMarketInput
+    );
   }
 
   @Patch(':id')

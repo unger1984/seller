@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToOne,
+  OneToMany,
   JoinColumn,
   Unique,
   Index,
@@ -182,4 +183,7 @@ export class ProductOzon {
   @OneToOne('Product', 'productOzon', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })
   product!: import('./product.entity.js').Product;
+
+  @OneToMany('ProductOzonWarehouseStock', 'productOzon')
+  warehouseStocks!: import('./product-ozon-warehouse-stock.entity.js').ProductOzonWarehouseStock[];
 }

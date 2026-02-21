@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { NavLink, Link, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,8 +15,8 @@ import {
   Plus,
 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/model/authStore';
+import { switchActiveCompany } from '@/features/auth/api/auth.api';
 import { useClickOutside } from '@/shared/hooks/useClickOutside';
-import { apiFetch } from '@/shared/api';
 import { Logo } from '@/shared/ui/Logo';
 
 const navItems = [
@@ -37,50 +38,36 @@ const profileMenuItems = [
 function ProfileDropdown() {
   const { user, token, memberships = [], setAuth, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useClickOutside(ref, () => setOpen(false));
 
-  const handleSelectCompany = async (companyId: string) => {
+  const switchMutation = useMutation({
+    mutationFn: (companyId: string) => switchActiveCompany(companyId, token!),
+    onSuccess: (data) => {
+      setAuth(
+        {
+          id: data.user.id,
+          email: data.user.email,
+          activeCompanyId: data.user.activeCompanyId ?? null,
+        },
+        data.accessToken,
+        data.memberships,
+        false
+      );
+      setOpen(false);
+    },
+  });
+
+  const handleSelectCompany = (companyId: string) => {
     if (!token || companyId === user?.activeCompanyId) {
       setOpen(false);
       return;
     }
-    setLoading(true);
-    try {
-      const res = await apiFetch('/auth/me/active-company', {
-        method: 'PATCH',
-        body: JSON.stringify({ companyId }),
-        token,
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        accessToken?: string;
-        user?: { id: string; email: string; activeCompanyId?: string };
-        memberships?: {
-          companyId: string;
-          companyName: string;
-          role: string;
-          isActive: boolean;
-        }[];
-      };
-      if (res.ok && data.accessToken && data.user) {
-        setAuth(
-          {
-            id: data.user.id,
-            email: data.user.email,
-            activeCompanyId: data.user.activeCompanyId ?? null,
-          },
-          data.accessToken,
-          data.memberships ?? [],
-          false
-        );
-      }
-    } finally {
-      setLoading(false);
-      setOpen(false);
-    }
+    switchMutation.mutate(companyId);
   };
+
+  const loading = switchMutation.isPending;
 
   return (
     <div className="relative" ref={ref}>

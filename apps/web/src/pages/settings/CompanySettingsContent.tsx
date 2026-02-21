@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, Button, Input, toastSuccess, toastError } from '@/shared/ui';
-import { apiFetch } from '@/shared/api';
 import { useAuthStore } from '@/features/auth/model/authStore';
+import { queryKeys } from '@/shared/api';
+import { fetchAccounts } from '@/features/products/api';
+import {
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  type MarketAccountDto,
+  type Marketplace,
+} from '@/features/settings/api/accounts.api';
 import { Pencil, Trash2 } from 'lucide-react';
-
-type Marketplace = 'OZON' | 'WILDBERRIES';
-
-interface MarketAccountDto {
-  id: string;
-  marketplace: Marketplace;
-  name: string;
-  isActive: boolean;
-  createdAt: string;
-}
 
 const MARKETPLACE_LABELS: Record<Marketplace, string> = {
   OZON: 'Ozon',
@@ -81,68 +80,61 @@ function AccountForm({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const queryClient = useQueryClient();
   const { token } = useAuthStore();
   const companyId = useAuthStore((s) => s.user?.activeCompanyId);
-  const [submitting, setSubmitting] = useState(false);
   const [clientId, setClientId] = useState('');
   const [apiKey, setApiKey] = useState('');
 
   const isEdit = !!account;
   const isOzon = marketplace === 'OZON';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!companyId || !token) return;
-    setSubmitting(true);
-    try {
-      const path = `/companies/${companyId}/accounts`;
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!companyId || !token) throw new Error('Нет доступа');
       if (isEdit) {
-        const body = isOzon
-          ? { marketplace: 'OZON', credentials: { clientId, apiKey } }
-          : { marketplace: 'WILDBERRIES', credentials: { apiKey } };
-        const res = await apiFetch(`${path}/${account.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify(body),
-          token,
-        });
-        if (!res.ok) {
-          const err = (await res.json().catch(() => ({}))) as {
-            message?: string;
-          };
-          throw new Error(
-            Array.isArray(err.message)
-              ? err.message.join('\n')
-              : (err.message ?? 'Ошибка при сохранении')
-          );
-        }
-        toastSuccess('Данные обновлены');
+        await updateAccount(
+          companyId,
+          account!.id,
+          isOzon
+            ? { marketplace: 'OZON', credentials: { clientId, apiKey } }
+            : { marketplace: 'WILDBERRIES', credentials: { apiKey } },
+          token
+        );
       } else {
         const name = MARKETPLACE_LABELS[marketplace];
-        const body = isOzon
-          ? { marketplace: 'OZON', name, credentials: { clientId, apiKey } }
-          : { marketplace: 'WILDBERRIES', name, credentials: { apiKey } };
-        const res = await apiFetch(path, {
-          method: 'POST',
-          body: JSON.stringify(body),
-          token,
-        });
-        if (!res.ok) {
-          const err = (await res.json().catch(() => ({}))) as {
-            message?: string | string[];
-          };
-          const msg = Array.isArray(err.message)
-            ? err.message.join('\n')
-            : ((err.message as string) ?? 'Ошибка при сохранении');
-          throw new Error(msg);
-        }
-        toastSuccess('Маркетплейс подключён');
+        await createAccount(
+          companyId,
+          isOzon
+            ? {
+                marketplace: 'OZON',
+                name,
+                credentials: { clientId, apiKey },
+              }
+            : {
+                marketplace: 'WILDBERRIES',
+                name,
+                credentials: { apiKey },
+              },
+          token
+        );
       }
+    },
+    onSuccess: () => {
+      toastSuccess(isEdit ? 'Данные обновлены' : 'Маркетплейс подключён');
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.accounts(companyId ?? ''),
+      });
       onSuccess();
-    } catch (err) {
+    },
+    onError: (err) => {
       toastError(err instanceof Error ? err.message : 'Ошибка при сохранении');
-    } finally {
-      setSubmitting(false);
-    }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveMutation.mutate();
   };
 
   return (
@@ -169,8 +161,8 @@ function AccountForm({
           placeholder={isOzon ? 'Ozon API Key' : 'Wildberries API Key'}
         />
         <div className="flex gap-2">
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Сохранение...' : 'Сохранить'}
+          <Button type="submit" disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? 'Сохранение...' : 'Сохранить'}
           </Button>
           <Button type="button" variant="ghost" onClick={onCancel}>
             Отмена
@@ -183,65 +175,48 @@ function AccountForm({
 
 /** Контент настроек компании: слоты Ozon и Wildberries */
 export function CompanySettingsContent() {
+  const queryClient = useQueryClient();
   const { token } = useAuthStore();
   const companyId = useAuthStore((s) => s.user?.activeCompanyId);
-  const [accounts, setAccounts] = useState<MarketAccountDto[]>([]);
-  const [loading, setLoading] = useState(true);
   const [formState, setFormState] = useState<{
     marketplace: Marketplace | null;
     account: MarketAccountDto | null;
   }>({ marketplace: null, account: null });
 
-  const fetchAccounts = useCallback(async () => {
-    if (!companyId || !token) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await apiFetch(`/companies/${companyId}/accounts`, { token });
-      if (res.ok) {
-        const data = (await res.json()) as MarketAccountDto[];
-        setAccounts(data);
-      }
-    } catch {
-      toastError('Не удалось загрузить аккаунты');
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, token]);
+  const accountsQuery = useQuery({
+    queryKey: queryKeys.accounts(companyId ?? ''),
+    queryFn: () => fetchAccounts(companyId!, token!),
+    enabled: !!companyId && !!token,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (accountId: string) =>
+      deleteAccount(companyId!, accountId, token!),
+    onSuccess: () => {
+      toastSuccess('Аккаунт отключён');
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.accounts(companyId ?? ''),
+      });
+    },
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : 'Ошибка при удалении');
+    },
+  });
 
   useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+    if (accountsQuery.isError) toastError('Не удалось загрузить аккаунты');
+  }, [accountsQuery.isError]);
 
+  const accounts = accountsQuery.data ?? [];
   const ozon = accounts.find((a) => a.marketplace === 'OZON') ?? null;
   const wb = accounts.find((a) => a.marketplace === 'WILDBERRIES') ?? null;
 
-  const handleDelete = async (account: MarketAccountDto) => {
-    if (!companyId || !token) return;
+  const handleDelete = (account: MarketAccountDto) => {
     if (!confirm(`Отключить ${account.name}?`)) return;
-    try {
-      const res = await apiFetch(
-        `/companies/${companyId}/accounts/${account.id}`,
-        {
-          method: 'DELETE',
-          token,
-        }
-      );
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as {
-          message?: string;
-        };
-        throw new Error(err.message ?? 'Аккаунт маркетплейса не найден');
-      }
-      toastSuccess('Аккаунт отключён');
-      fetchAccounts();
-    } catch (err) {
-      toastError(err instanceof Error ? err.message : 'Ошибка при удалении');
-    }
+    deleteMutation.mutate(account.id);
   };
 
-  if (loading) {
+  if (accountsQuery.isLoading) {
     return <div className="text-gray-500">Загрузка...</div>;
   }
 
@@ -260,10 +235,7 @@ export function CompanySettingsContent() {
         <AccountForm
           marketplace={formState.marketplace}
           account={formState.account}
-          onSuccess={() => {
-            setFormState({ marketplace: null, account: null });
-            fetchAccounts();
-          }}
+          onSuccess={() => setFormState({ marketplace: null, account: null })}
           onCancel={() => setFormState({ marketplace: null, account: null })}
         />
       ) : (

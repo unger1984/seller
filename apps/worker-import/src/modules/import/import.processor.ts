@@ -1,6 +1,6 @@
 /**
  * Воркер импорта каталога — оркестрация job, валидация, делегирование в сервисы.
- * Job: import-catathis.log. Делегирует OzonImportService / WbImportService по marketplace.
+ * Job: import-catalog. Делегирует OzonImportService / WbImportService по marketplace.
  */
 import { Inject, Injectable } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
@@ -16,9 +16,9 @@ import {
   IMPORT_ACTIVE_PREFIX,
   SYNC_IMPORT_DONE_CHANNEL,
 } from '@seller/domain';
-import { OzonImportService } from './services/ozon-import.service.js';
-import { WbImportService } from './services/wb-import.service.js';
-import { WORKER_REDIS_TOKEN } from './tokens.js';
+import { OzonImportService } from './ozon-import.service';
+import { WbImportService } from './wb-import.service';
+import { WORKER_REDIS_TOKEN } from '../../shared/tokens';
 
 @Injectable()
 @Processor('import-catalog', {

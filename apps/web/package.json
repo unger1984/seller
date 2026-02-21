@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@seller/shared-types": "*",
+    "@tanstack/react-query": "^5.62.10",
     "lucide-react": "0.468.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",

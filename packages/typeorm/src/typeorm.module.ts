@@ -8,11 +8,14 @@ import {
   User,
   CompanyMember,
   MarketAccount,
+  Warehouse,
   Product,
   Variant,
   VariantBarcode,
   ProductOzon,
   ProductWb,
+  ProductWbWarehouseStock,
+  ProductOzonWarehouseStock,
   IdempotencyKey,
 } from './entities/index.js';
 
@@ -32,11 +35,14 @@ const ENTITIES = [
   User,
   CompanyMember,
   MarketAccount,
+  Warehouse,
   Product,
   Variant,
   VariantBarcode,
   ProductOzon,
   ProductWb,
+  ProductWbWarehouseStock,
+  ProductOzonWarehouseStock,
   IdempotencyKey,
 ];
 

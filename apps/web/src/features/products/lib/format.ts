@@ -10,7 +10,7 @@ export function formatPlacementStatus(
     parts.push(`Ozon: ${v.placementStatusOzon}`);
   }
   if (hasWb && v.placementStatusWb) {
-    parts.push(`ВБ: ${v.placementStatusWb}`);
+    parts.push(`WB: ${v.placementStatusWb}`);
   }
   return parts.length > 0 ? parts.join(', ') : '—';
 }

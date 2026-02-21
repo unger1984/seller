@@ -1,8 +1,42 @@
 import { useState } from 'react';
-import { Download, Package, Plus, Search, Trash2 } from 'lucide-react';
-import { Button, Card, Input } from '@/shared/ui';
+import {
+  Copy,
+  Download,
+  Package,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  Button,
+  Card,
+  EditableValuePopover,
+  Input,
+  toastSuccess,
+} from '@/shared/ui';
 import { useProductsPage } from '@/features/products/hooks/useProductsPage';
-import { formatPlacementStatus } from '@/features/products/lib/format';
+const OZON_PRODUCT_URL = (sku: string) => `https://ozon.ru/product/${sku}`;
+const WB_PRODUCT_URL = (nmId: string) =>
+  `https://www.wildberries.ru/catalog/${nmId}/detail.aspx`;
+
+function CopyArticulButton({ value }: { value: string }) {
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    toastSuccess('Скопировано');
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+      aria-label="Копировать артикул"
+    >
+      <Copy className="size-3.5" aria-hidden />
+    </button>
+  );
+}
 
 /** Страница списка товаров — UI только */
 export function ProductsPage() {
@@ -24,6 +58,8 @@ export function ProductsPage() {
     handleImport,
     handleClearCatalog,
     handleCreateProduct,
+    handleUpdateOzonMarket,
+    handleUpdateWbMarket,
   } = useProductsPage();
 
   return (
@@ -46,7 +82,7 @@ export function ProductsPage() {
                       className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
                       aria-hidden
                     />
-                    Скачивание с ВБ...
+                    Скачивание с WB...
                   </div>
                 ) : (
                   <Button
@@ -147,48 +183,25 @@ export function ProductsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="px-4 py-3 text-left font-medium text-gray-700 w-14">
-                    Фото
+                  <th className="px-4 py-3 text-left font-medium text-gray-700 min-w-[15rem]">
+                    Товар
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">
-                    Артикул
-                  </th>
-                  {hasOzon && (
-                    <th className="px-4 py-3 text-left font-medium text-gray-700">
-                      Артикул Ozon
-                    </th>
-                  )}
-                  {hasWb && (
-                    <th className="px-4 py-3 text-left font-medium text-gray-700">
-                      Артикул ВБ
-                    </th>
-                  )}
                   <th className="px-4 py-3 text-left font-medium text-gray-700">
                     Название
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-700">
-                    Статус размещения
+                  {(hasOzon || hasWb) && (
+                    <th className="px-4 py-3 text-left font-medium text-gray-700">
+                      Цена
+                    </th>
+                  )}
+                  {(hasOzon || hasWb) && (
+                    <th className="px-4 py-3 text-left font-medium text-gray-700">
+                      Остаток
+                    </th>
+                  )}
+                  <th className="px-4 py-3 text-left font-medium text-gray-700 w-24">
+                    Действия
                   </th>
-                  {hasOzon && (
-                    <>
-                      <th className="px-4 py-3 text-right font-medium text-gray-700">
-                        Цена Ozon
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium text-gray-700">
-                        Остаток Ozon
-                      </th>
-                    </>
-                  )}
-                  {hasWb && (
-                    <>
-                      <th className="px-4 py-3 text-right font-medium text-gray-700">
-                        Цена ВБ
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium text-gray-700">
-                        Остаток ВБ
-                      </th>
-                    </>
-                  )}
                 </tr>
               </thead>
               <tbody>
@@ -200,74 +213,220 @@ export function ProductsPage() {
                           className="border-b border-gray-100 hover:bg-gray-50/50"
                         >
                           <td className="px-4 py-3">
-                            {v.primaryImage ? (
-                              <img
-                                src={v.primaryImage}
-                                alt=""
-                                className="size-10 object-cover rounded bg-gray-100"
-                              />
-                            ) : (
-                              <div className="size-10 bg-gray-100 rounded flex items-center justify-center">
-                                <Package
-                                  className="size-5 text-gray-400"
-                                  aria-hidden
-                                />
+                            <div className="flex gap-3 items-start">
+                              {v.primaryImage ? (
+                                <div className="shrink-0 w-[75px] h-[100px] rounded bg-gray-100 overflow-hidden flex items-center justify-center">
+                                  <img
+                                    src={v.primaryImage}
+                                    alt=""
+                                    className="w-[75px] h-[100px] object-contain"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="shrink-0 w-[75px] h-[100px] bg-gray-100 rounded flex items-center justify-center">
+                                  <Package
+                                    className="size-10 text-gray-400"
+                                    aria-hidden
+                                  />
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-0.5 justify-start text-gray-600 min-w-[9.5rem] [&>div]:whitespace-nowrap [&>div]:flex [&>div]:justify-between [&>div]:gap-2 [&>div]:items-center">
+                                <div>
+                                  <span>Артикул:</span>
+                                  <span className="flex items-center gap-1">
+                                    {v.vendorCode}
+                                    <CopyArticulButton value={v.vendorCode} />
+                                  </span>
+                                </div>
+                                {hasOzon &&
+                                  (v.ozonSku ??
+                                    v.ozonProductId ??
+                                    v.ozonOfferId) != null && (
+                                    <div>
+                                      <span className="font-medium text-[#0481CB]">
+                                        Ozon:
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        {v.ozonSku ??
+                                          v.ozonProductId ??
+                                          v.ozonOfferId}
+                                        <CopyArticulButton
+                                          value={String(
+                                            v.ozonSku ??
+                                              v.ozonProductId ??
+                                              v.ozonOfferId
+                                          )}
+                                        />
+                                      </span>
+                                    </div>
+                                  )}
+                                {hasWb && v.wbNmId != null && (
+                                  <div>
+                                    <span className="font-medium text-[#7D256F]">
+                                      WB:
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      {v.wbNmId}
+                                      <CopyArticulButton
+                                        value={String(v.wbNmId)}
+                                      />
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-700">
-                            {v.vendorCode}
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium text-gray-900">
+                                {product.name}
+                              </span>
+                              {product.nameOzon ? (
+                                <span className="text-sm text-gray-500 block">
+                                  <span className="font-medium text-[#0481CB]">
+                                    Ozon:
+                                  </span>{' '}
+                                  {(v.ozonSku ?? v.ozonProductId) ? (
+                                    <a
+                                      href={OZON_PRODUCT_URL(
+                                        v.ozonSku ?? v.ozonProductId!
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-gray-700 hover:underline"
+                                    >
+                                      {product.nameOzon}
+                                    </a>
+                                  ) : (
+                                    <span>{product.nameOzon}</span>
+                                  )}
+                                </span>
+                              ) : null}
+                              {product.nameWb ? (
+                                <span className="text-sm text-gray-500 block">
+                                  <span className="font-medium text-[#7D256F]">
+                                    WB:
+                                  </span>{' '}
+                                  {v.wbNmId ? (
+                                    <a
+                                      href={WB_PRODUCT_URL(String(v.wbNmId))}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-gray-700 hover:underline"
+                                    >
+                                      {product.nameWb}
+                                    </a>
+                                  ) : (
+                                    <span>{product.nameWb}</span>
+                                  )}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
-                          {hasOzon && (
-                            <td className="px-4 py-3 text-gray-600">
-                              {v.ozonProductId ?? v.ozonOfferId ?? '—'}
+                          {(hasOzon || hasWb) && (
+                            <td className="px-4 py-3 align-top text-gray-600">
+                              <div className="flex flex-col gap-0.5 min-w-[5rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-2 [&>div]:items-center">
+                                {hasOzon &&
+                                  (v.ozonSku ??
+                                    v.ozonProductId ??
+                                    v.ozonOfferId) != null && (
+                                    <div>
+                                      <span className="font-medium text-[#0481CB]">
+                                        Ozon:
+                                      </span>
+                                      <EditableValuePopover
+                                        title="Цена на Ozon"
+                                        subtitle={product.name}
+                                        fieldLabel="Цена"
+                                        type="price"
+                                        value={v.priceOzon ?? v.masterPrice}
+                                        productId={product.id}
+                                        onSubmit={handleUpdateOzonMarket}
+                                      >
+                                        {(
+                                          v.priceOzon ?? v.masterPrice
+                                        ).toLocaleString('ru-RU')}
+                                      </EditableValuePopover>
+                                    </div>
+                                  )}
+                                {hasWb && v.wbNmId != null && (
+                                  <div>
+                                    <span className="font-medium text-[#7D256F]">
+                                      WB:
+                                    </span>
+                                    <EditableValuePopover
+                                      title="Цена на WB"
+                                      subtitle={product.name}
+                                      fieldLabel="Цена"
+                                      type="price"
+                                      value={v.priceWb ?? v.masterPrice}
+                                      productId={product.id}
+                                      onSubmit={handleUpdateWbMarket}
+                                    >
+                                      {(
+                                        v.priceWb ?? v.masterPrice
+                                      ).toLocaleString('ru-RU')}
+                                    </EditableValuePopover>
+                                  </div>
+                                )}
+                              </div>
                             </td>
                           )}
-                          {hasWb && (
-                            <td className="px-4 py-3 text-gray-600">
-                              {v.wbNmId ?? '—'}
+                          {(hasOzon || hasWb) && (
+                            <td className="px-4 py-3 align-top text-gray-600">
+                              <div className="flex flex-col gap-0.5 min-w-[5rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-2 [&>div]:items-center">
+                                {hasOzon &&
+                                  (v.ozonSku ??
+                                    v.ozonProductId ??
+                                    v.ozonOfferId) != null && (
+                                    <div>
+                                      <span className="font-medium text-[#0481CB]">
+                                        Ozon:
+                                      </span>
+                                      <EditableValuePopover
+                                        title="Остаток на Ozon"
+                                        subtitle={product.name}
+                                        fieldLabel="Доступно к заказу"
+                                        type="stock"
+                                        value={v.stockOzon ?? v.masterStock}
+                                        productId={product.id}
+                                        onSubmit={handleUpdateOzonMarket}
+                                      >
+                                        {v.stockOzon ?? v.masterStock}
+                                      </EditableValuePopover>
+                                    </div>
+                                  )}
+                                {hasWb && v.wbNmId != null && (
+                                  <div>
+                                    <span className="font-medium text-[#7D256F]">
+                                      WB:
+                                    </span>
+                                    <EditableValuePopover
+                                      title="Остаток на WB"
+                                      subtitle={product.name}
+                                      fieldLabel="Доступно к заказу"
+                                      type="stock"
+                                      value={v.stockWb ?? v.masterStock}
+                                      productId={product.id}
+                                      onSubmit={handleUpdateWbMarket}
+                                    >
+                                      {v.stockWb ?? v.masterStock}
+                                    </EditableValuePopover>
+                                  </div>
+                                )}
+                              </div>
                             </td>
                           )}
-                          <td className="px-4 py-3 font-medium text-gray-900">
-                            {product.name}
+                          <td className="px-4 py-3 align-top">
+                            <Link
+                              to={`/products/${product.id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                              aria-label="Редактировать товар"
+                            >
+                              <Pencil className="size-3.5" aria-hidden />
+                              Редактировать
+                            </Link>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {formatPlacementStatus(v, hasOzon, hasWb)}
-                          </td>
-                          {hasOzon && (
-                            <>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {v.ozonProductId != null ||
-                                v.ozonOfferId != null
-                                  ? (
-                                      v.priceOzon ?? v.masterPrice
-                                    ).toLocaleString('ru-RU')
-                                  : '—'}
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {v.ozonProductId != null ||
-                                v.ozonOfferId != null
-                                  ? (v.stockOzon ?? v.masterStock)
-                                  : '—'}
-                              </td>
-                            </>
-                          )}
-                          {hasWb && (
-                            <>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {v.wbNmId != null
-                                  ? (v.priceWb ?? v.masterPrice).toLocaleString(
-                                      'ru-RU'
-                                    )
-                                  : '—'}
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-600">
-                                {v.wbNmId != null
-                                  ? (v.stockWb ?? v.masterStock)
-                                  : '—'}
-                              </td>
-                            </>
-                          )}
                         </tr>
                       ))
                     : [
@@ -276,52 +435,102 @@ export function ProductsPage() {
                           className="border-b border-gray-100 hover:bg-gray-50/50"
                         >
                           <td className="px-4 py-3">
-                            {product.primaryImage ? (
-                              <img
-                                src={product.primaryImage}
-                                alt=""
-                                className="size-10 object-cover rounded bg-gray-100"
-                              />
-                            ) : (
-                              <div className="size-10 bg-gray-100 rounded flex items-center justify-center">
-                                <Package
-                                  className="size-5 text-gray-400"
-                                  aria-hidden
-                                />
+                            <div className="flex gap-3 items-start">
+                              {product.primaryImage ? (
+                                <div className="shrink-0 w-[75px] h-[100px] rounded bg-gray-100 overflow-hidden flex items-center justify-center">
+                                  <img
+                                    src={product.primaryImage}
+                                    alt=""
+                                    className="w-[75px] h-[100px] object-contain"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="shrink-0 w-[75px] h-[100px] bg-gray-100 rounded flex items-center justify-center">
+                                  <Package
+                                    className="size-10 text-gray-400"
+                                    aria-hidden
+                                  />
+                                </div>
+                              )}
+                              <div className="flex flex-col gap-0.5 justify-start text-gray-500 min-w-[9.5rem] [&>div]:whitespace-nowrap [&>div]:flex [&>div]:justify-between [&>div]:gap-2">
+                                <div>
+                                  <span>Артикул:</span>
+                                  <span>—</span>
+                                </div>
                               </div>
-                            )}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-500">—</td>
-                          {hasOzon && (
-                            <td className="px-4 py-3 text-gray-500">—</td>
-                          )}
-                          {hasWb && (
-                            <td className="px-4 py-3 text-gray-500">—</td>
-                          )}
-                          <td className="px-4 py-3 font-medium text-gray-900">
-                            {product.name}
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium text-gray-900">
+                                {product.name}
+                              </span>
+                              {product.nameOzon ? (
+                                <span className="text-sm text-gray-500 block">
+                                  <span className="font-medium text-[#0481CB]">
+                                    Ozon:
+                                  </span>{' '}
+                                  {(product.variants[0]?.ozonSku ??
+                                  product.variants[0]?.ozonProductId) ? (
+                                    <a
+                                      href={OZON_PRODUCT_URL(
+                                        product.variants[0]!.ozonSku ??
+                                          product.variants[0]!.ozonProductId!
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-gray-700 hover:underline"
+                                    >
+                                      {product.nameOzon}
+                                    </a>
+                                  ) : (
+                                    <span>{product.nameOzon}</span>
+                                  )}
+                                </span>
+                              ) : null}
+                              {product.nameWb ? (
+                                <span className="text-sm text-gray-500 block">
+                                  <span className="font-medium text-[#7D256F]">
+                                    WB:
+                                  </span>{' '}
+                                  {product.variants[0]?.wbNmId ? (
+                                    <a
+                                      href={WB_PRODUCT_URL(
+                                        String(product.variants[0].wbNmId)
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-gray-700 hover:underline"
+                                    >
+                                      {product.nameWb}
+                                    </a>
+                                  ) : (
+                                    <span>{product.nameWb}</span>
+                                  )}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-500">—</td>
-                          {hasOzon && (
-                            <>
-                              <td className="px-4 py-3 text-right text-gray-500">
-                                —
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-500">
-                                —
-                              </td>
-                            </>
+                          {(hasOzon || hasWb) && (
+                            <td className="px-4 py-3 align-top text-gray-500">
+                              <div className="flex flex-col gap-0.5 min-w-[5rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-2 [&>div]:items-center"></div>
+                            </td>
                           )}
-                          {hasWb && (
-                            <>
-                              <td className="px-4 py-3 text-right text-gray-500">
-                                —
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-500">
-                                —
-                              </td>
-                            </>
+                          {(hasOzon || hasWb) && (
+                            <td className="px-4 py-3 align-top text-gray-500">
+                              <div className="flex flex-col gap-0.5 min-w-[5rem] [&>div]:flex [&>div]:justify-between [&>div]:gap-2 [&>div]:items-center"></div>
+                            </td>
                           )}
+                          <td className="px-4 py-3 align-top">
+                            <Link
+                              to={`/products/${product.id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                              aria-label="Редактировать товар"
+                            >
+                              <Pencil className="size-3.5" aria-hidden />
+                              Редактировать
+                            </Link>
+                          </td>
                         </tr>,
                       ]
                 )}

@@ -31,4 +31,4 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/dist ./dist
 
 # Без отдельного скрипта — Alpine busybox иногда ломает exec скриптов
-ENTRYPOINT ["/bin/sh", "-c", "exec node /app/dist/apps/worker-$WORKER/main.js"]
+ENTRYPOINT ["/bin/sh", "-c", "exec node --import=extensionless/register /app/dist/apps/worker-$WORKER/main.js"]

@@ -56,3 +56,23 @@ export const AddBarcodeSchema = z.object({
   barcode: MarketplaceStringIdSchema,
 });
 export type AddBarcodeInput = z.infer<typeof AddBarcodeSchema>;
+
+/** Обновление цены/остатка Ozon у продукта. stockByWarehouse: { [externalId]: quantity } */
+export const UpdateProductOzonMarketSchema = z.object({
+  price: z.number().nonnegative().finite().optional(),
+  stock: z.number().int().min(0).optional(),
+  stockByWarehouse: z.record(z.string(), z.number().int().min(0)).optional(),
+});
+export type UpdateProductOzonMarketInput = z.infer<
+  typeof UpdateProductOzonMarketSchema
+>;
+
+/** Обновление цены/остатка WB у продукта. stock — общая сумма, распределяется по складам. */
+export const UpdateProductWbMarketSchema = z.object({
+  price: z.number().nonnegative().finite().optional(),
+  stock: z.number().int().min(0).optional(),
+  stockByWarehouse: z.record(z.string(), z.number().int().min(0)).optional(),
+});
+export type UpdateProductWbMarketInput = z.infer<
+  typeof UpdateProductWbMarketSchema
+>;

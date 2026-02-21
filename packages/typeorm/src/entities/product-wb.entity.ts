@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToOne,
+  OneToMany,
   JoinColumn,
   Unique,
   Index,
@@ -109,6 +110,18 @@ export class ProductWb {
   @Column({ name: 'raw_card', type: 'jsonb', nullable: true })
   rawCard!: unknown;
 
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
+  price!: string | null;
+
+  /** Сумма остатков по всем складам (дублируется для списков) */
+  @Column({ name: 'stock_present', type: 'int', nullable: true })
+  stockPresent!: number | null;
+
   @Column({ name: 'synced_at', type: 'timestamptz', nullable: true })
   syncedAt!: Date | null;
 
@@ -119,4 +132,7 @@ export class ProductWb {
   @OneToOne('Product', 'productWb', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })
   product!: import('./product.entity.js').Product;
+
+  @OneToMany('ProductWbWarehouseStock', 'productWb')
+  warehouseStocks!: import('./product-wb-warehouse-stock.entity.js').ProductWbWarehouseStock[];
 }

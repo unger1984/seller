@@ -10,14 +10,14 @@ import { NestFactory } from '@nestjs/core';
 import { getQueueToken } from '@nestjs/bullmq';
 import { createLogger } from '@seller/shared';
 import { QUEUE_NAMES } from '@seller/domain';
-import { WorkerImportModule } from './worker-import.module.js';
+import { WorkerImportModule } from './worker-import.module';
 
 const log = createLogger('WorkerImport');
 
 async function bootstrap() {
   try {
     const app = await NestFactory.createApplicationContext(WorkerImportModule, {
-      logger: false,
+      logger: log,
     });
     await app.init();
 

@@ -25,7 +25,8 @@
     "run": {
       "executor": "@nx/js:node",
       "options": {
-        "buildTarget": "worker-import:build"
+        "buildTarget": "worker-import:build",
+        "runtimeArgs": ["--import=extensionless/register"]
       }
     }
   }

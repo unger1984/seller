@@ -1,98 +1,104 @@
 /**
  * Хук: статус импорта через polling.
- * При mount — GET import/status. При активном импорте — опрос каждые 3 с,
- * при завершении вызывает onImportDone.
+ * useQuery + refetchInterval при активном импорте.
+ * При завершении импорта вызывает onImportDone.
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiFetch } from '@/shared/api';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/shared/api';
+import { fetchImportStatus, type ImportStatus } from '@/features/products/api';
 
 export type ImportStatusItem = {
   active: boolean;
   jobId?: string;
 };
 
-export type ImportStatus = Record<string, ImportStatusItem>;
-
 export function useSyncImportStatus(
   companyId: string | null,
   token: string | null,
   options: { onImportDone?: () => void } = {}
 ) {
-  const [importStatus, setImportStatus] = useState<ImportStatus>({});
-  const [loading, setLoading] = useState(true);
+  const [optimisticImporting, setOptimisticImporting] = useState<
+    Record<string, boolean>
+  >({});
+  const optimisticRef = useRef(optimisticImporting);
+  optimisticRef.current = optimisticImporting;
+  const prevDataRef = useRef<ImportStatus>({});
+  const hadActiveRef = useRef(false);
   const onImportDoneRef = useRef(options.onImportDone);
   onImportDoneRef.current = options.onImportDone;
 
-  const fetchStatus = useCallback(async () => {
-    if (!companyId || !token) return;
-    setLoading(true);
-    try {
-      const res = await apiFetch(`/companies/${companyId}/sync/import/status`, {
-        token,
-      });
-      if (res.ok) {
-        const data = (await res.json()) as ImportStatus;
-        setImportStatus(data);
+  const query = useQuery({
+    queryKey: queryKeys.syncImportStatus(companyId ?? ''),
+    queryFn: () => fetchImportStatus(companyId!, token!),
+    enabled: !!companyId && !!token,
+    refetchInterval: (q) => {
+      const apiActive =
+        q.state.data && Object.values(q.state.data).some((s) => s.active);
+      // ref — избегаем stale closure: refetchInterval может вызываться с устаревшим optimisticImporting
+      const optActive = Object.values(optimisticRef.current).some(Boolean);
+      return apiActive || optActive ? 3000 : false;
+    },
+  });
+
+  const data = query.data ?? {};
+  const anyActive =
+    Object.values(data).some((s) => s.active) ||
+    Object.values(optimisticImporting).some(Boolean);
+
+  // Синхронизируем optimistic с API и вызываем onImportDone по завершении каждого импорта.
+  useEffect(() => {
+    const apiData = query.data;
+    if (!apiData) return;
+    const prev = prevDataRef.current;
+    const toRemove: string[] = [];
+    for (const [id, item] of Object.entries(apiData)) {
+      const wasActive = prev[id]?.active || optimisticImporting[id];
+      if (wasActive && !item.active) {
+        toRemove.push(id);
       }
-    } catch {
-      setImportStatus({});
-    } finally {
-      setLoading(false);
     }
-  }, [companyId, token]);
+    prevDataRef.current = apiData;
+
+    if (toRemove.length > 0) {
+      setOptimisticImporting((optPrev) => {
+        const next = { ...optPrev };
+        for (const id of toRemove) delete next[id];
+        return next;
+      });
+      onImportDoneRef.current?.();
+    }
+  }, [query.data, optimisticImporting]);
 
   useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
-
-  /** Polling: при активном импорте опрашиваем статус, при завершении — onImportDone */
-  useEffect(() => {
-    const anyActive = Object.values(importStatus).some((s) => s.active);
-    if (!anyActive || !companyId || !token) return;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-    const timeoutId = setTimeout(() => {
-      intervalId = setInterval(async () => {
-        try {
-          const res = await apiFetch(
-            `/companies/${companyId}/sync/import/status`,
-            { token }
-          );
-          if (res.ok) {
-            const data = (await res.json()) as ImportStatus;
-            const stillActive = Object.values(data).some((s) => s.active);
-            if (!stillActive) {
-              setImportStatus(data);
-              onImportDoneRef.current?.();
-            }
-          }
-        } catch {
-          /* ignore */
-        }
-      }, 3000);
-    }, 5000);
-    return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [companyId, token, importStatus]);
+    const wasActive = hadActiveRef.current;
+    hadActiveRef.current = anyActive;
+    if (wasActive && !anyActive) {
+      setOptimisticImporting({});
+    }
+  }, [anyActive]);
 
   const setImporting = useCallback(
     (marketAccountId: string, active: boolean) => {
-      setImportStatus((prev) => ({
+      setOptimisticImporting((prev) => ({
         ...prev,
-        [marketAccountId]: {
-          ...prev[marketAccountId],
-          active,
-        },
+        [marketAccountId]: active,
       }));
     },
     []
   );
 
+  const importStatus: ImportStatus = { ...data };
+  for (const [id, active] of Object.entries(optimisticImporting)) {
+    if (active) {
+      importStatus[id] = { ...importStatus[id], active: true };
+    }
+  }
+
   return {
     importStatus,
-    loading,
-    fetchStatus,
+    loading: query.isLoading,
+    fetchStatus: query.refetch,
     setImporting,
   };
 }

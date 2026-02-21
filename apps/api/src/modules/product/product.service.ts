@@ -1,5 +1,6 @@
 /** Сервис продуктов — CRUD с инвариантами companyId. ProductOzon/ProductWb вместо Listing. */
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -7,7 +8,22 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createLogger } from '@seller/shared';
-import { Product, Variant, VariantBarcode } from '@seller/typeorm';
+import {
+  MarketAccount,
+  Product,
+  ProductOzon,
+  ProductWb,
+  ProductWbWarehouseStock,
+  ProductOzonWarehouseStock,
+  Variant,
+  VariantBarcode,
+  Warehouse,
+} from '@seller/typeorm';
+import { CredentialsCryptoService } from '../../shared/common/credentials-crypto.service.js';
+import {
+  putWbStocksForWarehouse,
+  type WbStockItem,
+} from './wb-stocks.client.js';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -15,6 +31,8 @@ import type {
   CreateVariantInput,
   UpdateVariantInput,
   AddBarcodeInput,
+  UpdateProductOzonMarketInput,
+  UpdateProductWbMarketInput,
 } from '@seller/shared-types';
 
 @Injectable()
@@ -24,10 +42,23 @@ export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    @InjectRepository(ProductOzon)
+    private readonly productOzonRepo: Repository<ProductOzon>,
+    @InjectRepository(ProductWb)
+    private readonly productWbRepo: Repository<ProductWb>,
     @InjectRepository(Variant)
     private readonly variantRepo: Repository<Variant>,
     @InjectRepository(VariantBarcode)
-    private readonly barcodeRepo: Repository<VariantBarcode>
+    private readonly barcodeRepo: Repository<VariantBarcode>,
+    @InjectRepository(MarketAccount)
+    private readonly marketAccountRepo: Repository<MarketAccount>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepo: Repository<Warehouse>,
+    @InjectRepository(ProductWbWarehouseStock)
+    private readonly wbStockRepo: Repository<ProductWbWarehouseStock>,
+    @InjectRepository(ProductOzonWarehouseStock)
+    private readonly ozonStockRepo: Repository<ProductOzonWarehouseStock>,
+    private readonly credentialsCrypto: CredentialsCryptoService
   ) {}
 
   /** Список продуктов с пагинацией (productOzon, productWb, variants) */
@@ -53,7 +84,7 @@ export class ProductService {
             "v"."vendor_code" ILIKE :searchPattern OR
             "b"."barcode" = :s OR
             "ozon"."offer_id" ILIKE :searchPattern OR
-            CAST("ozon"."ozon_product_id" AS TEXT) ILIKE :searchPattern OR
+            CAST("ozon"."sku" AS TEXT) ILIKE :searchPattern OR
             "wb"."vendor_code" ILIKE :searchPattern OR
             CAST("wb"."nm_id" AS TEXT) ILIKE :searchPattern
           )`,
@@ -92,6 +123,7 @@ export class ProductService {
         'p.description',
         'p.vendorCode',
         'p.attributes',
+        'p.createdAt',
         'p.updatedAt',
         'v.id',
         'v.productId',
@@ -104,13 +136,18 @@ export class ProductService {
         'ozon.id',
         'ozon.offerId',
         'ozon.ozonProductId',
+        'ozon.sku',
+        'ozon.name',
         'ozon.price',
         'ozon.stockPresent',
         'ozon.primaryImage',
         'wb.id',
         'wb.nmId',
+        'wb.title',
         'wb.vendorCode',
         'wb.primaryPhoto',
+        'wb.price',
+        'wb.stockPresent',
       ])
       .where('p.companyId = :companyId', { companyId });
 
@@ -121,7 +158,7 @@ export class ProductService {
       qb.andWhere('p.brand = :brand', { brand });
     }
 
-    qb.orderBy('p.updatedAt', 'DESC');
+    qb.orderBy('p.createdAt', 'DESC');
     qb.skip((page - 1) * limit);
     qb.take(limit);
     const items = await qb.getMany();
@@ -151,14 +188,19 @@ export class ProductService {
     productOzon?: {
       offerId: string;
       ozonProductId: string;
+      sku: string | null;
+      name: string | null;
       price: string | null;
       stockPresent: number | null;
       primaryImage: string | null;
     } | null;
     productWb?: {
       nmId: string;
+      title: string | null;
       vendorCode: string;
       primaryPhoto: string | null;
+      price: string | null;
+      stockPresent: number | null;
     } | null;
   }) {
     const attrs = product.attributes as {
@@ -180,6 +222,7 @@ export class ProductService {
       barcodes: (v.barcodes ?? []).map((b) => b.barcode),
       ozonOfferId: product.productOzon?.offerId ?? null,
       ozonProductId: product.productOzon?.ozonProductId ?? null,
+      ozonSku: product.productOzon?.sku ?? null,
       primaryImage,
       wbNmId: product.productWb?.nmId ?? null,
       placementStatusOzon: null,
@@ -188,8 +231,10 @@ export class ProductService {
         ? Number(product.productOzon.price)
         : null,
       stockOzon: product.productOzon?.stockPresent ?? null,
-      priceWb: null,
-      stockWb: null,
+      priceWb: product.productWb?.price
+        ? Number(product.productWb.price)
+        : null,
+      stockWb: product.productWb?.stockPresent ?? null,
     }));
 
     if (variants.length === 0 && (product.productOzon || product.productWb)) {
@@ -203,6 +248,7 @@ export class ProductService {
         barcodes: [],
         ozonOfferId: product.productOzon?.offerId ?? null,
         ozonProductId: product.productOzon?.ozonProductId ?? null,
+        ozonSku: product.productOzon?.sku ?? null,
         primaryImage,
         wbNmId: product.productWb?.nmId ?? null,
         placementStatusOzon: null,
@@ -211,14 +257,18 @@ export class ProductService {
           ? Number(product.productOzon.price)
           : null,
         stockOzon: product.productOzon?.stockPresent ?? null,
-        priceWb: null,
-        stockWb: null,
+        priceWb: product.productWb?.price
+          ? Number(product.productWb.price)
+          : null,
+        stockWb: product.productWb?.stockPresent ?? null,
       });
     }
 
     return {
       id: product.id,
       name: product.name,
+      nameOzon: product.productOzon?.name ?? null,
+      nameWb: product.productWb?.title ?? null,
       brand: product.brand,
       description: product.description ?? null,
       primaryImage,
@@ -248,8 +298,14 @@ export class ProductService {
       where: { id, companyId },
       relations: {
         variants: { barcodes: true },
-        productOzon: { marketAccount: true },
-        productWb: { marketAccount: true },
+        productOzon: {
+          marketAccount: true,
+          warehouseStocks: { warehouse: true },
+        },
+        productWb: {
+          marketAccount: true,
+          warehouseStocks: { warehouse: true },
+        },
       },
     });
     if (!product) throw new NotFoundException('Товар не найден');
@@ -333,6 +389,232 @@ export class ProductService {
       color: data.color !== undefined ? data.color : variant.color,
     });
     return this.variantRepo.findOneOrFail({ where: { id: variantId } });
+  }
+
+  /** Обновить цену/остаток Ozon у продукта */
+  async updateProductOzonMarket(
+    companyId: string,
+    productId: string,
+    data: UpdateProductOzonMarketInput
+  ) {
+    const product = await this.productRepo.findOne({
+      where: { id: productId, companyId },
+      relations: {
+        productOzon: { warehouseStocks: { warehouse: true } },
+      },
+    });
+    if (!product) throw new NotFoundException('Товар не найден');
+    const ozon = product.productOzon;
+    if (!ozon) throw new NotFoundException('У товара нет карточки Ozon');
+
+    const input = data as UpdateProductOzonMarketInput & {
+      stockByWarehouse?: Record<string, number>;
+    };
+    const toUpdate: Partial<ProductOzon> = {};
+    if (data.price !== undefined) toUpdate.price = String(data.price);
+
+    let stockByWarehouse: Record<string, number> | null = null;
+    if (input.stockByWarehouse !== undefined) {
+      stockByWarehouse = input.stockByWarehouse;
+      toUpdate.stockPresent = Object.values(stockByWarehouse).reduce(
+        (a, b) => a + b,
+        0
+      );
+    } else if (data.stock !== undefined) {
+      toUpdate.stockPresent = data.stock;
+      const warehouses = (ozon.warehouseStocks ?? []).map(
+        (s: { warehouse: { externalId: string } }) => s.warehouse.externalId
+      );
+      if (warehouses.length > 0) {
+        stockByWarehouse = { [warehouses[0]!]: data.stock };
+        warehouses.slice(1).forEach((extId: string) => {
+          stockByWarehouse![extId] = 0;
+        });
+      }
+    }
+
+    if (Object.keys(toUpdate).length === 0 && !stockByWarehouse) return ozon;
+    if (Object.keys(toUpdate).length > 0) {
+      await this.productOzonRepo.update(
+        ozon.id,
+        toUpdate as Record<string, unknown>
+      );
+    }
+    if (stockByWarehouse) {
+      await this.upsertOzonWarehouseStocks(
+        ozon.marketAccountId,
+        ozon.id,
+        stockByWarehouse
+      );
+    }
+    this.log.i('ProductOzon price/stock обновлён', {
+      productId,
+      companyId,
+      ...toUpdate,
+    });
+    return this.productOzonRepo.findOneOrFail({
+      where: { id: ozon.id },
+      relations: { warehouseStocks: { warehouse: true } },
+    });
+  }
+
+  /** Обновить цену/остаток WB у продукта. stock — распределяем по складам. */
+  async updateProductWbMarket(
+    companyId: string,
+    productId: string,
+    data: UpdateProductWbMarketInput
+  ) {
+    const product = await this.productRepo.findOne({
+      where: { id: productId, companyId },
+      relations: { productWb: { warehouseStocks: { warehouse: true } } },
+    });
+    if (!product) throw new NotFoundException('Товар не найден');
+    const wb = product.productWb;
+    if (!wb) throw new NotFoundException('У товара нет карточки WB');
+
+    const input = data as UpdateProductWbMarketInput & {
+      stockByWarehouse?: Record<string, number>;
+    };
+    const toUpdate: { price?: string; stockPresent?: number } = {};
+    if (data.price !== undefined) toUpdate.price = String(data.price);
+
+    let newStockByWarehouse: Record<string, number> | null = null;
+    if (input.stockByWarehouse !== undefined) {
+      newStockByWarehouse = input.stockByWarehouse;
+      toUpdate.stockPresent = Object.values(newStockByWarehouse).reduce(
+        (a: number, b: number) => a + b,
+        0
+      );
+    } else if (data.stock !== undefined) {
+      const warehouses = (wb.warehouseStocks ?? [])
+        .map(
+          (s: { warehouse: { externalId: string } }) => s.warehouse.externalId
+        )
+        .filter((x): x is string => Boolean(x));
+      if (warehouses.length === 0) {
+        throw new NotFoundException(
+          'Нет данных по складам WB. Выполните импорт с WB.'
+        );
+      }
+      newStockByWarehouse = {};
+      warehouses.forEach((extId: string, i: number) => {
+        newStockByWarehouse![extId] = i === 0 ? data.stock! : 0;
+      });
+      toUpdate.stockPresent = data.stock;
+    }
+
+    if (Object.keys(toUpdate).length === 0 && !newStockByWarehouse) return wb;
+
+    if (Object.keys(toUpdate).length > 0) {
+      await this.productWbRepo.update(
+        wb.id,
+        toUpdate as Record<string, unknown>
+      );
+    }
+    if (newStockByWarehouse) {
+      await this.upsertWbWarehouseStocks(
+        wb.marketAccountId,
+        wb.id,
+        newStockByWarehouse
+      );
+    }
+    this.log.i('ProductWb price/stock обновлён', {
+      productId,
+      companyId,
+      ...toUpdate,
+    });
+
+    // Пуш остатков в WB API по складам (externalId = warehouseId для WB)
+    if (newStockByWarehouse && Object.keys(newStockByWarehouse).length > 0) {
+      const account = await this.marketAccountRepo.findOne({
+        where: { id: wb.marketAccountId },
+        select: ['credentialsEncrypted'],
+      });
+      if (!account) {
+        throw new NotFoundException('Аккаунт WB не найден');
+      }
+      let apiKey: string;
+      try {
+        const json = this.credentialsCrypto.decrypt(
+          account.credentialsEncrypted
+        );
+        const creds = JSON.parse(json) as { apiKey?: string };
+        apiKey = creds.apiKey ?? '';
+      } catch (e) {
+        this.log.e('Не удалось расшифровать credentials WB', {
+          marketAccountId: wb.marketAccountId,
+          error: e instanceof Error ? e.message : String(e),
+        });
+        throw new BadRequestException(
+          'Не удалось расшифровать учётные данные WB'
+        );
+      }
+      if (!apiKey) {
+        throw new BadRequestException('API-ключ WB не найден в учётных данных');
+      }
+      const nmId = Number(wb.nmId);
+      if (!Number.isInteger(nmId) || nmId <= 0) {
+        throw new BadRequestException('Некорректный nmId товара WB');
+      }
+      for (const [externalId, quantity] of Object.entries(
+        newStockByWarehouse
+      )) {
+        const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+        const items: WbStockItem[] = [{ nmId, quantity: qty }];
+        await putWbStocksForWarehouse(apiKey, externalId, items);
+      }
+    }
+
+    return this.productWbRepo.findOneOrFail({
+      where: { id: wb.id },
+      relations: { warehouseStocks: { warehouse: true } },
+    });
+  }
+
+  private async upsertWbWarehouseStocks(
+    marketAccountId: string,
+    productWbId: string,
+    stockByWarehouse: Record<string, number>
+  ): Promise<void> {
+    await this.wbStockRepo.delete({ productWbId });
+    const warehouses = await this.warehouseRepo.find({
+      where: { marketAccountId },
+      select: ['id', 'externalId'],
+    });
+    const byExtId = new Map(warehouses.map((w) => [w.externalId, w]));
+    for (const [extId, quantity] of Object.entries(stockByWarehouse)) {
+      const wh = byExtId.get(extId);
+      if (!wh) continue;
+      const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+      await this.wbStockRepo.save({
+        productWbId,
+        warehouseId: wh.id,
+        quantity: qty,
+      });
+    }
+  }
+
+  private async upsertOzonWarehouseStocks(
+    marketAccountId: string,
+    productOzonId: string,
+    stockByWarehouse: Record<string, number>
+  ): Promise<void> {
+    await this.ozonStockRepo.delete({ productOzonId });
+    const warehouses = await this.warehouseRepo.find({
+      where: { marketAccountId },
+      select: ['id', 'externalId'],
+    });
+    const byExtId = new Map(warehouses.map((w) => [w.externalId, w]));
+    for (const [extId, quantity] of Object.entries(stockByWarehouse)) {
+      const wh = byExtId.get(extId);
+      if (!wh) continue;
+      const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+      await this.ozonStockRepo.save({
+        productOzonId,
+        warehouseId: wh.id,
+        quantity: qty,
+      });
+    }
   }
 
   /** Добавить штрихкод к варианту */

@@ -1,6 +1,6 @@
 ---
 description: NestJS patterns — Modules, DI, Guards, exception filters
-globs: apps/api/**/*.ts
+globs: apps/api/**/*.ts, apps/worker-import/**/*.ts
 alwaysApply: false
 ---
 

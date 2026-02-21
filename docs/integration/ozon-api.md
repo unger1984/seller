@@ -1,5 +1,9 @@
 # Ozon API
 
+## Базовый URL
+
+- `https://api-seller.ozon.ru` — Seller API (docs.ozon.ru/api/seller)
+
 ## Авторизация
 
 - Headers: `Client-Id`, `Api-Key`

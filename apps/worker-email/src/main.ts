@@ -18,7 +18,7 @@ import { WorkerEmailModule } from './worker-email.module.js';
 
 const log = createLogger('WorkerEmail');
 
-const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9090', 10);
+const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9093', 10);
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerEmailModule, {

@@ -13,17 +13,27 @@ alwaysApply: false
 
 ## Usage
 
+In services and controllers — use a class field:
+
 ```typescript
 // ✅ GOOD
 import { createLogger } from '@seller/shared';
 
-const log = createLogger('MyService');
-log.i('Message');
-log.e('Failed', error);
-log.w('Deprecated', { id });
-log.d('Debug data', obj);
-log.http('GET /api/foo 200 12ms', { method: 'GET', statusCode: 200 });
+@Injectable()
+export class MyService {
+  private readonly log = createLogger(MyService.name);
+
+  doSomething() {
+    this.log.i('Message');
+    this.log.e('Failed', error);
+    this.log.w('Deprecated', { id });
+    this.log.d('Debug data', obj);
+    this.log.http('GET /api/foo 200 12ms', { method: 'GET', statusCode: 200 });
+  }
+}
 ```
+
+In `main.ts`, factories, and modules without a class — use module-level `const log = createLogger('Label')`.
 
 API: `log.i()` info, `log.d()` debug, `log.w()` warn, `log.e()` error, `log.http(msg, meta)` access-логи.
 

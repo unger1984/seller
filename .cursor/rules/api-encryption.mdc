@@ -18,3 +18,7 @@ alwaysApply: false
 
 - `credentialsHash` — for deduplication
 - On read: decrypt, pass to marketplace client
+
+## Never to Frontend
+
+Credentials must **never** be sent to the frontend. See `marketplace-credentials-never-frontend.mdc`.

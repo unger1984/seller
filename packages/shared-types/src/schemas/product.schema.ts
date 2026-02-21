@@ -9,6 +9,7 @@ export const CreateProductSchema = z.object({
   name: z.string().trim().min(1),
   brand: z.string().trim().optional(),
   description: z.string().trim().optional(),
+  vendorCode: z.string().trim().min(1),
   attributes: z.record(z.unknown()).optional(),
 });
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
@@ -18,6 +19,7 @@ export const UpdateProductSchema = z.object({
   name: z.string().trim().min(1).optional(),
   brand: z.string().trim().optional().nullable(),
   description: z.string().trim().optional().nullable(),
+  vendorCode: z.string().trim().min(1).optional(),
   attributes: z.record(z.unknown()).optional().nullable(),
 });
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;

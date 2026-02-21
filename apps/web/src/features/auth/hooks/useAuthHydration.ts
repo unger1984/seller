@@ -29,13 +29,15 @@ export function useAuthHydration() {
             isActive: boolean;
           }[];
           const requiresCompany = data.requiresCompany ?? false;
+          const token =
+            (data as { accessToken?: string }).accessToken ?? stored;
           useAuthStore.getState().setAuth(
             {
               id: data.id,
               email: data.email,
               activeCompanyId: data.activeCompanyId ?? null,
             },
-            stored,
+            token,
             memberships,
             requiresCompany
           );

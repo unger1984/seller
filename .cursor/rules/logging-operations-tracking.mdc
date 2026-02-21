@@ -1,0 +1,54 @@
+---
+description: Log all operations for traceability; every business action must be visible in logs
+globs: apps/api/**/*.ts, apps/worker-*/**/*.ts, packages/shared/**/*.ts
+alwaysApply: true
+---
+
+# Logging — Operations and Tracking
+
+## Requirement
+
+**Every business operation must be logged.** When debugging or monitoring, the full flow from API request to worker completion should be traceable in logs.
+
+## What to Log
+
+### Entry points
+- When a handler/controller receives a request (operation name, key params like id, companyId)
+- When a worker receives a job (jobId, payload summary)
+
+### Business steps
+- Before/after external calls (API, DB, queue)
+- Success: what was done, key identifiers, counts
+- Failure: error message, context (id, companyId)
+
+### Cross-service flows
+- API enqueues job → log jobId, queue name
+- Worker picks job → log jobId, payload
+- Worker completes → log result summary
+
+## Format
+
+Use `createLogger(ClassName.name)` from `@seller/shared` as a class field:
+
+```typescript
+private readonly log = createLogger(SyncService.name);
+// ...
+this.log.i('Import job added to queue', { jobId, marketAccountId, companyId });
+this.log.e('Import failed', { marketAccountId, error: err.message });
+```
+
+- **log.i()** — info, normal flow
+- **log.w()** — warning, handled error, retry
+- **log.e()** — error, failure
+- **log.d()** — debug, verbose (use sparingly)
+
+## Anti-patterns
+
+- Silent operations — no log when job added, job processed, entity created
+- Logging only errors — success path invisible
+- High-cardinality in labels — avoid userId/jobId as metric labels (see monitoring-observability.mdc)
+
+## Example: Sync Import Flow
+
+**API:** SyncController receives POST → SyncService validates account → SyncQueueService adds job → log jobId  
+**Worker:** Job received → log jobId → fetch from Ozon/WB → log count → create MatchCandidates → log created count → done

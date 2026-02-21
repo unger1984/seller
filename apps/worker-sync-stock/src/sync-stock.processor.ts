@@ -9,16 +9,16 @@ import type { Job } from 'bullmq';
 import { createLogger } from '@seller/shared';
 import type { SyncStockJobData } from '@seller/domain';
 
-const log = createLogger('SyncStockProcessor');
-
 @Injectable()
 @Processor('sync-stock', {
   concurrency: parseInt(process.env.SYNC_STOCK_CONCURRENCY ?? '5', 10),
 })
 export class SyncStockProcessor extends WorkerHost {
+  private readonly log = createLogger(SyncStockProcessor.name);
+
   async process(job: Job<SyncStockJobData>): Promise<{ status: string }> {
     const { listingId, companyId } = job.data;
-    log.i(`listingId=${listingId} companyId=${companyId}`, {
+    this.log.i(`listingId=${listingId} companyId=${companyId}`, {
       listingId,
       companyId,
     });

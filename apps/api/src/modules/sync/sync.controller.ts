@@ -12,6 +12,7 @@ import {
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import type { z } from 'zod';
+import { createLogger } from '@seller/shared';
 import { ImportCatalogSchema } from '@seller/shared-types';
 import type { ImportCatalogInput } from '@seller/shared-types';
 import { SyncService } from './sync.service.js';
@@ -28,7 +29,17 @@ class ImportCatalogDto extends createZodDto(
 @Controller('companies/:companyId/sync')
 @UseGuards(JwtAuthGuard, TenantGuard)
 export class SyncController {
+  private readonly log = createLogger(SyncController.name);
+
   constructor(private readonly service: SyncService) {}
+
+  @Get('import/status')
+  @ApiOperation({ summary: 'Статус импорта по маркетам' })
+  async getImportStatus(@Req() req: Request & { user?: JwtUser }) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.getImportStatus(companyId);
+  }
 
   @Get('jobs')
   @ApiOperation({ summary: 'История jobs' })
@@ -64,6 +75,16 @@ export class SyncController {
   ) {
     const companyId = req.user?.activeCompanyId;
     if (!companyId) throw new Error('Active company not set');
-    return this.service.importCatalog(companyId, body as ImportCatalogInput);
+    const input = body as ImportCatalogInput;
+    this.log.i('Import catalog requested', {
+      companyId,
+      marketAccountId: input.marketAccountId,
+    });
+    const result = await this.service.importCatalog(companyId, input);
+    this.log.i('Import catalog response', {
+      companyId,
+      jobId: result.jobId,
+    });
+    return result;
   }
 }

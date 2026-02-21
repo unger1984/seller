@@ -60,12 +60,13 @@ export class ProductController {
   @ApiOperation({ summary: 'Список продуктов' })
   async list(
     @Param('companyId') _companyId: string,
-    @Query() query: z.infer<typeof ProductListQuerySchema>,
+    @Query() query: Record<string, unknown>,
     @Req() req: Request & { user?: JwtUser }
   ) {
     const companyId = req.user?.activeCompanyId;
     if (!companyId) throw new Error('Active company not set');
-    return this.service.list(companyId, query as ProductListQuery);
+    const parsed = ProductListQuerySchema.parse(query);
+    return this.service.list(companyId, parsed as ProductListQuery);
   }
 
   @Post()

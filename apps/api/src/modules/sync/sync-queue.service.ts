@@ -4,9 +4,12 @@
  */
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { createLogger } from '@seller/shared';
 import {
   QUEUE_NAMES,
   JOB_NAMES,
+  IMPORT_ACTIVE_PREFIX,
+  IMPORT_ACTIVE_TTL_SEC,
   type ImportCatalogJobData,
   type PublishListingJobData,
   type SyncStockJobData,
@@ -18,6 +21,7 @@ import {
 
 @Injectable()
 export class SyncQueueService implements OnModuleDestroy {
+  private readonly log = createLogger(SyncQueueService.name);
   private readonly queueImport: Queue;
   private readonly queuePublish: Queue;
   private readonly queueSyncStock: Queue;
@@ -35,7 +39,23 @@ export class SyncQueueService implements OnModuleDestroy {
   }
 
   async addImportCatalog(data: ImportCatalogJobData) {
+    this.log.i('Adding job to queue', {
+      queue: QUEUE_NAMES.IMPORT_CATALOG,
+      marketAccountId: data.marketAccountId,
+      companyId: data.companyId,
+    });
     const job = await this.queueImport.add(JOB_NAMES.IMPORT_CATALOG, data);
+    const key = `${IMPORT_ACTIVE_PREFIX}${data.marketAccountId}`;
+    const payload = JSON.stringify({
+      jobId: String(job.id),
+      companyId: data.companyId,
+      startedAt: new Date().toISOString(),
+    });
+    await this.redis.setex(key, IMPORT_ACTIVE_TTL_SEC, payload);
+    this.log.i('Job added to queue', {
+      queue: QUEUE_NAMES.IMPORT_CATALOG,
+      jobId: job.id,
+    });
     return { jobId: job.id };
   }
 

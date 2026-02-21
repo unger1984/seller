@@ -18,7 +18,10 @@ import { useClickOutside } from '@/shared/hooks/useClickOutside';
 import { apiFetch } from '@/shared/api';
 import { Logo } from '@/shared/ui/Logo';
 
-const navItems = [{ to: '/', label: 'Главная', icon: LayoutDashboard }];
+const navItems = [
+  { to: '/', label: 'Главная', icon: LayoutDashboard },
+  { to: '/products', label: 'Товары', icon: Package },
+];
 
 /** Пункты меню в выпадающем профиле */
 const profileMenuItems = [

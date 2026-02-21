@@ -8,7 +8,6 @@
     "bullmq": "5.0.0",
     "ioredis": "5.4.0",
     "@seller/domain": "*",
-    "@seller/shared": "*",
-    "@seller/prisma-client": "*"
+    "@seller/shared": "*"
   }
 }

@@ -11,13 +11,20 @@ import { createLogger } from '@seller/shared';
 /** Логирует HTTP‑запросы: method, url, statusCode, duration. */
 @Injectable()
 export class HttpLoggingInterceptor implements NestInterceptor {
-  private readonly log = createLogger('HTTP');
+  private readonly log = createLogger(HttpLoggingInterceptor.name);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
     const res = context.switchToHttp().getResponse();
     const { method, url, ip } = req;
     const userAgent = req.get('user-agent') ?? '-';
+
+    this.log.http(`${method} ${url} ← request`, {
+      method,
+      url,
+      ip,
+      userAgent,
+    });
 
     const start = Date.now();
 
@@ -26,14 +33,17 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         next: () => {
           const statusCode = res.statusCode;
           const duration = Date.now() - start;
-          this.log.http(`${method} ${url} ${statusCode} ${duration}ms`, {
-            method,
-            url,
-            statusCode,
-            durationMs: duration,
-            ip,
-            userAgent,
-          });
+          this.log.http(
+            `${method} ${url} ${statusCode} ${duration}ms → response`,
+            {
+              method,
+              url,
+              statusCode,
+              durationMs: duration,
+              ip,
+              userAgent,
+            }
+          );
         },
         error: (err: unknown) => {
           const statusCode =
@@ -41,15 +51,18 @@ export class HttpLoggingInterceptor implements NestInterceptor {
               ? ((err as { status?: number }).status ?? 500)
               : 500;
           const duration = Date.now() - start;
-          this.log.http(`${method} ${url} ${statusCode} ${duration}ms`, {
-            method,
-            url,
-            statusCode,
-            durationMs: duration,
-            ip,
-            userAgent,
-            error: err instanceof Error ? err.message : String(err),
-          });
+          this.log.http(
+            `${method} ${url} ${statusCode} ${duration}ms → error`,
+            {
+              method,
+              url,
+              statusCode,
+              durationMs: duration,
+              ip,
+              userAgent,
+              error: err instanceof Error ? err.message : String(err),
+            }
+          );
         },
       })
     );

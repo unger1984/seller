@@ -6,6 +6,7 @@
     "moduleResolution": "NodeNext",
     "outDir": "../../dist/apps/worker-import",
     "rootDir": "src",
+    "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },

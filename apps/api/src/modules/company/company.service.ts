@@ -4,19 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CompanyRole, Prisma } from '@prisma/client';
-import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { Company, CompanyMember, CompanyRole } from '@seller/typeorm';
 import type { CreateCompanyInput } from '@seller/shared-types';
 
 @Injectable()
 export class CompanyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
+    @InjectRepository(CompanyMember)
+    private readonly memberRepo: Repository<CompanyMember>,
+    private readonly dataSource: DataSource
+  ) {}
 
   /** Список компаний, где user — member */
   async list(userId: string) {
-    const members = await this.prisma.companyMember.findMany({
+    const members = await this.memberRepo.find({
       where: { userId },
-      include: { company: true },
+      relations: { company: true },
     });
     return members.map((m) => ({
       id: m.company.id,
@@ -29,23 +36,19 @@ export class CompanyService {
   /** Создать компанию и добавить user как OWNER */
   async create(userId: string, data: CreateCompanyInput) {
     try {
-      const company = await this.prisma.company.create({
-        data: {
-          name: data.name,
-          members: {
-            create: {
-              userId,
-              role: CompanyRole.OWNER,
-            },
-          },
-        },
+      return await this.dataSource.transaction(async (tx) => {
+        const company = tx.getRepository(Company).create({ name: data.name });
+        await tx.getRepository(Company).save(company);
+        const member = tx.getRepository(CompanyMember).create({
+          userId,
+          companyId: company.id,
+          role: CompanyRole.OWNER,
+        });
+        await tx.getRepository(CompanyMember).save(member);
+        return company;
       });
-      return company;
     } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2002'
-      ) {
+      if (err instanceof Error && 'code' in err && err.code === '23505') {
         throw new ConflictException(
           'Компания с таким названием уже существует'
         );
@@ -56,9 +59,9 @@ export class CompanyService {
 
   /** Детали компании — только если user member */
   async getById(userId: string, companyId: string) {
-    const member = await this.prisma.companyMember.findUnique({
-      where: { userId_companyId: { userId, companyId } },
-      include: { company: true },
+    const member = await this.memberRepo.findOne({
+      where: { userId, companyId },
+      relations: { company: true },
     });
     if (!member) {
       throw new NotFoundException('Компания не найдена');

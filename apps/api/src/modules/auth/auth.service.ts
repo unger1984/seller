@@ -7,11 +7,12 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes, randomUUID } from 'crypto';
-import { PrismaService } from '../../shared/prisma/prisma.service.js';
+import { Repository } from 'typeorm';
+import { User, CompanyMember } from '@seller/typeorm';
 import { ConfigService } from '../../shared/config/config.service.js';
 import {
   REDIS_TOKEN,
@@ -40,7 +41,10 @@ function hashToken(raw: string): string {
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(CompanyMember)
+    private readonly memberRepo: Repository<CompanyMember>,
     private readonly jwt: JwtService,
     private readonly tokenStore: AuthTokenStore,
     private readonly emailQueue: EmailQueueService,
@@ -52,9 +56,8 @@ export class AuthService {
   async register(data: RegisterInput): Promise<{ message: string }> {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     try {
-      const user = await this.prisma.user.create({
-        data: { email: data.email, passwordHash },
-      });
+      const user = this.userRepo.create({ email: data.email, passwordHash });
+      await this.userRepo.save(user);
       const rawToken = randomBytes(32).toString('base64url');
       const tokenHash = hashToken(rawToken);
       await this.tokenStore.invalidateEmailVerificationForUser(user.id);
@@ -68,10 +71,7 @@ export class AuthService {
         message: 'Проверьте почту. Ссылка для подтверждения отправлена.',
       };
     } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2002'
-      ) {
+      if (err instanceof Error && 'code' in err && err.code === '23505') {
         throw new ConflictException('Email уже зарегистрирован');
       }
       throw err;
@@ -91,14 +91,12 @@ export class AuthService {
     if (!userId) {
       throw new BadRequestException('Ссылка устарела. Запросите новое письмо.');
     }
-    await this.prisma.user.update({
+    await this.userRepo.update({ id: userId }, { emailVerifiedAt: new Date() });
+    const user = await this.userRepo.findOne({
       where: { id: userId },
-      data: { emailVerifiedAt: new Date() },
+      relations: { companyMembers: { company: true } },
     });
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      include: { companyMembers: { include: { company: true } } },
-    });
+    if (!user) throw new UnauthorizedException('Пользователь не найден');
     const memberships = user.companyMembers.map((m) => ({
       companyId: m.companyId,
       companyName: m.company.name,
@@ -126,9 +124,7 @@ export class AuthService {
   async resendVerification(
     data: ResendVerificationInput
   ): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const user = await this.userRepo.findOne({ where: { email: data.email } });
     if (!user) {
       return { message: 'Если email зарегистрирован, письмо отправлено.' };
     }
@@ -162,9 +158,9 @@ export class AuthService {
 
   /** Вход: проверка emailVerifiedAt, выдача JWT с memberships */
   async login(data: LoginInput, companyId?: string): Promise<LoginResponse> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepo.findOne({
       where: { email: data.email },
-      include: { companyMembers: { include: { company: true } } },
+      relations: { companyMembers: { company: true } },
     });
     if (!user) {
       throw new UnauthorizedException('Неверный email или пароль');
@@ -205,7 +201,7 @@ export class AuthService {
   async forgotPassword(
     data: ForgotPasswordInput
   ): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepo.findOne({
       where: { email: data.email },
     });
     if (!user) {
@@ -234,10 +230,7 @@ export class AuthService {
       );
     }
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash },
-    });
+    await this.userRepo.update({ id: userId }, { passwordHash });
     return { message: 'Пароль изменён. Войдите в систему.' };
   }
 
@@ -250,22 +243,20 @@ export class AuthService {
     user: UserResponse;
     memberships: MeResponse['memberships'];
   }> {
-    const member = await this.prisma.companyMember.findUnique({
-      where: { userId_companyId: { userId, companyId } },
-      include: {
-        user: {
-          include: { companyMembers: { include: { company: true } } },
-        },
+    const member = await this.memberRepo.findOne({
+      where: { userId, companyId },
+      relations: {
+        user: { companyMembers: { company: true } },
         company: true,
       },
     });
     if (!member) {
       throw new UnauthorizedException('Вы не состоите в этой компании');
     }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { lastActiveCompanyId: companyId },
-    });
+    await this.userRepo.update(
+      { id: userId },
+      { lastActiveCompanyId: companyId }
+    );
     const accessToken = this.jwt.sign({
       sub: member.userId,
       email: member.user.email,
@@ -286,9 +277,9 @@ export class AuthService {
 
   /** Текущий пользователь по JWT — без TenantGuard */
   async me(userId: string): Promise<MeResponse> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepo.findOne({
       where: { id: userId },
-      include: { companyMembers: { include: { company: true } } },
+      relations: { companyMembers: { company: true } },
     });
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден');
@@ -308,11 +299,19 @@ export class AuthService {
     const activeCompanyId = requiresCompany
       ? undefined
       : (this.resolveActiveCompany(user, undefined) ?? undefined);
-    return {
+    const result: MeResponse = {
       ...this.toUserResponse(user, activeCompanyId),
       memberships,
       ...(requiresCompany && { requiresCompany: true }),
     };
+    if (activeCompanyId) {
+      result.accessToken = this.jwt.sign({
+        sub: user.id,
+        email: user.email,
+        activeCompanyId,
+      });
+    }
+    return result;
   }
 
   /** Приоритет: companyId из аргумента, lastActiveCompanyId (если в memberships), иначе первая компания */
@@ -369,4 +368,6 @@ export interface MeResponse extends UserResponse {
     isActive: boolean;
   }[];
   requiresCompany?: boolean;
+  /** Новый JWT с activeCompanyId — для гидратации, чтобы tenant-запросы проходили */
+  accessToken?: string;
 }

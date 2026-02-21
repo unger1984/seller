@@ -16,6 +16,7 @@ import { ForgotPasswordPage } from '@/pages/forgot-password/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/reset-password/ResetPasswordPage';
 import { CreateCompanyPage } from '@/pages/onboarding/CreateCompanyPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { ProductsPage } from '@/pages/products/ProductsPage';
 
 /** Ловит падения дочерних компонентов, чтобы не было белого экрана */
 class RouteErrorBoundary extends Component<
@@ -81,6 +82,7 @@ function AppRoutes() {
           }
         >
           <Route index element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
           <Route path="settings" element={<SettingsLayout />}>
             <Route index element={<Navigate to="company" replace />} />
             <Route path="company" element={<CompanySettingsContent />} />

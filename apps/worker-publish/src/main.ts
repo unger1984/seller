@@ -18,7 +18,7 @@ import { WorkerPublishModule } from './worker-publish.module.js';
 
 const log = createLogger('WorkerPublish');
 
-const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9090', 10);
+const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9091', 10);
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerPublishModule, {

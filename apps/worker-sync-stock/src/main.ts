@@ -18,7 +18,7 @@ import { WorkerSyncStockModule } from './worker-sync-stock.module.js';
 
 const log = createLogger('WorkerSyncStock');
 
-const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9090', 10);
+const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9092', 10);
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(

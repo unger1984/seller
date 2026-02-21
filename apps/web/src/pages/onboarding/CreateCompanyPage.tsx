@@ -50,15 +50,32 @@ export function CreateCompanyPage() {
         }[];
         requiresCompany?: boolean;
       } | null;
-      if (meData?.id) {
+      if (meData?.id && meData.activeCompanyId) {
+        const patchRes = await apiFetch('/auth/me/active-company', {
+          method: 'PATCH',
+          body: JSON.stringify({ companyId: meData.activeCompanyId }),
+          token,
+        });
+        const patchData = (await patchRes.json().catch(() => null)) as {
+          accessToken?: string;
+          user?: { activeCompanyId?: string };
+          memberships?: {
+            companyId: string;
+            companyName: string;
+            role: string;
+            isActive: boolean;
+          }[];
+        } | null;
+        const newToken =
+          patchRes.ok && patchData?.accessToken ? patchData.accessToken : token;
         setAuth(
           {
             id: meData.id,
             email: meData.email ?? '',
-            activeCompanyId: meData.activeCompanyId ?? null,
+            activeCompanyId: meData.activeCompanyId,
           },
-          token,
-          meData.memberships ?? [],
+          newToken,
+          patchData?.memberships ?? meData.memberships ?? [],
           meData.requiresCompany ?? false
         );
         setTimeout(() => navigate('/', { replace: true }), 2000);

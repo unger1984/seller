@@ -6,12 +6,17 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Company } from '@seller/typeorm';
 import type { JwtUser } from '../common/types.js';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
@@ -26,9 +31,9 @@ export class TenantGuard implements CanActivate {
         'ID компании в URL не совпадает с активной компанией'
       );
     }
-    const company = await this.prisma.company.findUnique({
+    const company = await this.companyRepo.findOne({
       where: { id: activeCompanyId },
-      select: { isActive: true },
+      select: ['id', 'isActive'],
     });
     if (!company) {
       throw new ForbiddenException('Компания не найдена');

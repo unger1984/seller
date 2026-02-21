@@ -1,0 +1,394 @@
+import { useState } from 'react';
+import {
+  Download,
+  Package,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { Button, Card, Input } from '@/shared/ui';
+import { useProductsPage } from '@/features/products/hooks/useProductsPage';
+import { formatPlacementStatus } from '@/features/products/lib/format';
+
+/** Страница списка товаров — UI только */
+export function ProductsPage() {
+  const {
+    accounts,
+    products,
+    total,
+    setPage,
+    search,
+    setSearch,
+    loading,
+    importStatus,
+    addModalOpen,
+    setAddModalOpen,
+    hasOzon,
+    hasWb,
+    handleImport,
+    handleCreateProduct,
+  } = useProductsPage();
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-semibold text-gray-900">Список товаров</h1>
+        <div className="flex flex-wrap gap-2">
+          {hasWb &&
+            (() => {
+              const wbId = accounts.find(
+                (a) => a.marketplace === 'WILDBERRIES'
+              )?.id;
+              const wbImporting = wbId ? importStatus[wbId]?.active : false;
+              return wbImporting ? (
+                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
+                  <span
+                    className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                    aria-hidden
+                  />
+                  Скачивание с ВБ...
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={() => handleImport('WILDBERRIES')}
+                  aria-label="Скачать с ВБ"
+                >
+                  <Download className="size-4" aria-hidden />
+                  Скачать с ВБ
+                </Button>
+              );
+            })()}
+          {hasOzon &&
+            (() => {
+              const ozonId = accounts.find((a) => a.marketplace === 'OZON')?.id;
+              const ozonImporting = ozonId
+                ? importStatus[ozonId]?.active
+                : false;
+              return ozonImporting ? (
+                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
+                  <span
+                    className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                    aria-hidden
+                  />
+                  Скачивание с Озон...
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={() => handleImport('OZON')}
+                  aria-label="Скачать с Озон"
+                >
+                  <Download className="size-4" aria-hidden />
+                  Скачать с Озон
+                </Button>
+              );
+            })()}
+          <Button
+            variant="primary"
+            onClick={() => setAddModalOpen(true)}
+            aria-label="Добавить товар"
+          >
+            <Plus className="size-4" aria-hidden />
+            Добавить
+          </Button>
+        </div>
+      </div>
+
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
+              aria-hidden
+            />
+            <Input
+              type="search"
+              label="Поиск"
+              placeholder="По названию, артикулу, SKU, штрихкоду"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && setPage(1)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="ghost" aria-label="Фильтры">
+            <SlidersHorizontal className="size-4" aria-hidden />
+            Фильтры
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-gray-500">Загрузка...</div>
+        ) : products.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            Товары не найдены. Добавьте товар вручную или скачайте с
+            маркетплейса.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="px-4 py-3 text-left font-medium text-gray-700 w-14">
+                    Фото
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">
+                    Артикул
+                  </th>
+                  {hasOzon && (
+                    <th className="px-4 py-3 text-left font-medium text-gray-700">
+                      Артикул Ozon
+                    </th>
+                  )}
+                  {hasWb && (
+                    <th className="px-4 py-3 text-left font-medium text-gray-700">
+                      Артикул ВБ
+                    </th>
+                  )}
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">
+                    Название
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">
+                    Статус размещения
+                  </th>
+                  {hasOzon && (
+                    <>
+                      <th className="px-4 py-3 text-right font-medium text-gray-700">
+                        Цена Ozon
+                      </th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-700">
+                        Остаток Ozon
+                      </th>
+                    </>
+                  )}
+                  {hasWb && (
+                    <>
+                      <th className="px-4 py-3 text-right font-medium text-gray-700">
+                        Цена ВБ
+                      </th>
+                      <th className="px-4 py-3 text-right font-medium text-gray-700">
+                        Остаток ВБ
+                      </th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {products.flatMap((product) =>
+                  product.variants.length > 0
+                    ? product.variants.map((v) => (
+                        <tr
+                          key={v.id}
+                          className="border-b border-gray-100 hover:bg-gray-50/50"
+                        >
+                          <td className="px-4 py-3">
+                            {v.primaryImage ? (
+                              <img
+                                src={v.primaryImage}
+                                alt=""
+                                className="size-10 object-cover rounded bg-gray-100"
+                              />
+                            ) : (
+                              <div className="size-10 bg-gray-100 rounded flex items-center justify-center">
+                                <Package
+                                  className="size-5 text-gray-400"
+                                  aria-hidden
+                                />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {v.vendorCode}
+                          </td>
+                          {hasOzon && (
+                            <td className="px-4 py-3 text-gray-600">
+                              {v.ozonProductId ?? v.ozonOfferId ?? '—'}
+                            </td>
+                          )}
+                          {hasWb && (
+                            <td className="px-4 py-3 text-gray-600">
+                              {v.wbNmId ?? '—'}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatPlacementStatus(v, hasOzon, hasWb)}
+                          </td>
+                          {hasOzon && (
+                            <>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {v.priceOzon != null
+                                  ? v.priceOzon.toLocaleString('ru-RU')
+                                  : v.masterPrice.toLocaleString('ru-RU')}
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {v.stockOzon ?? v.masterStock}
+                              </td>
+                            </>
+                          )}
+                          {hasWb && (
+                            <>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {v.priceWb != null
+                                  ? v.priceWb.toLocaleString('ru-RU')
+                                  : v.masterPrice.toLocaleString('ru-RU')}
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-600">
+                                {v.stockWb ?? v.masterStock}
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))
+                    : [
+                        <tr
+                          key={product.id}
+                          className="border-b border-gray-100 hover:bg-gray-50/50"
+                        >
+                          <td className="px-4 py-3">
+                            {product.primaryImage ? (
+                              <img
+                                src={product.primaryImage}
+                                alt=""
+                                className="size-10 object-cover rounded bg-gray-100"
+                              />
+                            ) : (
+                              <div className="size-10 bg-gray-100 rounded flex items-center justify-center">
+                                <Package
+                                  className="size-5 text-gray-400"
+                                  aria-hidden
+                                />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">—</td>
+                          {hasOzon && (
+                            <td className="px-4 py-3 text-gray-500">—</td>
+                          )}
+                          {hasWb && (
+                            <td className="px-4 py-3 text-gray-500">—</td>
+                          )}
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">—</td>
+                          {hasOzon && (
+                            <>
+                              <td className="px-4 py-3 text-right text-gray-500">
+                                —
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-500">
+                                —
+                              </td>
+                            </>
+                          )}
+                          {hasWb && (
+                            <>
+                              <td className="px-4 py-3 text-right text-gray-500">
+                                —
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-500">
+                                —
+                              </td>
+                            </>
+                          )}
+                        </tr>,
+                      ]
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {total > 0 && (
+          <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
+            Всего: {total}
+          </div>
+        )}
+      </Card>
+
+      {addModalOpen && (
+        <AddProductModal
+          onClose={() => setAddModalOpen(false)}
+          onSubmit={handleCreateProduct}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Модалка добавления товара */
+function AddProductModal({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit: (name: string, brand?: string) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(name.trim(), brand.trim() || undefined);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={onClose}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      role="dialog"
+      aria-modal
+      aria-labelledby="add-product-title"
+    >
+      <Card
+        className="w-full max-w-md p-6 m-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2
+          id="add-product-title"
+          className="text-lg font-semibold text-gray-900 mb-4"
+        >
+          Добавить товар
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            id="product-name"
+            label="Название *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Введите название"
+            required
+          />
+          <Input
+            id="product-brand"
+            label="Бренд"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="Необязательно"
+          />
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Отмена
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              Добавить
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+}

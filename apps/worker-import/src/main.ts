@@ -21,19 +21,28 @@ const log = createLogger('WorkerImport');
 const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9090', 10);
 
 async function bootstrap() {
-  const app = await NestFactory.createApplicationContext(WorkerImportModule, {
-    logger: false,
-  });
-  await app.init();
+  try {
+    const app = await NestFactory.createApplicationContext(WorkerImportModule, {
+      logger: false,
+    });
+    await app.init();
 
-  const queue = app.get(getQueueToken(QUEUE_NAMES.IMPORT_CATALOG));
-  const register = createBullQueueMetrics(queue, 'import');
-  startMetricsServer(METRICS_PORT, register);
+    const queue = app.get(getQueueToken(QUEUE_NAMES.IMPORT_CATALOG));
+    const register = createBullQueueMetrics(queue, 'import');
+    startMetricsServer(METRICS_PORT, register);
 
-  log.i('Started, queue=import-catalog, metrics=/metrics');
+    log.i('Started, queue=import-catalog, metrics=/metrics');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    log.e('Bootstrap failed', { error: msg, stack });
+    throw err;
+  }
 }
 
 bootstrap().catch((err) => {
-  log.e('Bootstrap failed:', err);
-  process.exit(1);
+  const msg = err instanceof Error ? err.message : String(err);
+  const stack = err instanceof Error ? err.stack : undefined;
+  log.e('Bootstrap failed', { error: msg, stack });
+  setTimeout(() => process.exit(1), 100);
 });

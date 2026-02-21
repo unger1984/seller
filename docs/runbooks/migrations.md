@@ -1,16 +1,22 @@
-# Миграции Prisma
+# Миграции TypeORM
 
 ## Команды
 
 ```bash
 # Применить миграции (требуется запущенный PostgreSQL)
-npm run db:migrate   # prisma migrate dev
+npm run db:migrate   # nx build typeorm && typeorm migration:run
 
-# Интерактивный просмотр БД
-npm run db:studio    # prisma studio
+# Stage: через dotenv
+npm run db:migrate:stage   # dotenv -e .env.stage -- npm run db:migrate
 ```
 
 Перед миграцией: `docker compose up -d postgres` (если БД ещё не запущена).
+
+## Где миграции
+
+- `packages/typeorm/src/migrations/` — TypeScript-миграции
+- DataSource: `packages/typeorm/src/data-source.ts`
+- CLI берёт `DATABASE_URL` из env или использует дефолт `postgresql://seller:seller@localhost:5432/seller`
 
 ## COMMENT ON
 
@@ -19,17 +25,13 @@ npm run db:studio    # prisma studio
 - `COMMENT ON COLUMN "table_name"."column_name" IS '...'`
 - `COMMENT ON TYPE "EnumName" IS '...'` — для enum
 
-Значения enum = API-контракт; менять только через миграцию + changelog.
+Значения enum = API-контракт; менять только через миграцию + changelog. См. `.cursor/rules/typeorm-conventions.mdc`.
 
-## После миграции
-
-Проверить `COMMENT ON TYPE` — Prisma может пересоздать enum при рефакторинге и сбросить комментарии. При необходимости выполнить COMMENT вручную. См. `.cursor/rules/prisma-conventions.mdc`.
-
-## Генерация SQL без БД
+## Создание новой миграции
 
 ```bash
-cd packages/prisma-client
-npx prisma migrate diff --from-empty --to-schema=prisma/schema.prisma --script -o migration.sql
+cd packages/typeorm
+npx typeorm migration:create src/migrations/YYYYMMDDHHMMSS-Name
 ```
 
-Затем создать папку `prisma/migrations/YYYYMMDDHHMMSS_name/` и поместить туда `migration.sql`, добавив COMMENT ON вручную.
+Заполнить `up()` и `down()`, затем `npm run db:migrate`.

@@ -8,8 +8,8 @@ alwaysApply: false
 
 ## Folder Structure
 
-- **src/modules/** — feature modules (Auth, Company, MarketAccount, Product, Listing, Matching, Sync)
-- **src/shared/** — infrastructure and cross-cutting: config, logger, prisma, guards, common (types, CredentialsCryptoService)
+- **src/modules/** — feature modules (Auth, Company, MarketAccount, Product, Sync)
+- **src/shared/** — infrastructure and cross-cutting: config, logger, typeorm, guards, common (types, CredentialsCryptoService)
 - Modules import from shared; shared does not import from modules
 
 ## Modules

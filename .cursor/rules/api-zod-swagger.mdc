@@ -17,7 +17,7 @@ alwaysApply: false
 - BigInt does not serialize to JSON; breaks Swagger and React
 - **Rule:** All marketplace IDs in REST API are **string**
 - Input: `z.string()` with validation — numeric IDs: `z.string().regex(/^\d+$/)`; offerId/vendorCode/barcode: `z.string().trim().min(1)`
-- Output: always `string`; convert Prisma BigInt → DTO with `.toString()`
+- Output: always `string`; convert TypeORM BigInt → DTO with `.toString()`
 
 ## Swagger
 

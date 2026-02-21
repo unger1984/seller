@@ -8,15 +8,14 @@ alwaysApply: true
 
 ## Forbidden Flags
 
-- **`--ignore-scripts`** — never use; postinstall/prepare scripts must run (Prisma generate, husky Git hooks, etc.)
+- **`--ignore-scripts`** — never use; postinstall/prepare scripts must run (husky Git hooks, etc.)
 - **`--legacy-peer-deps`** — never use; fix peer dependency conflicts properly instead
 
 ## Rationale
 
-- Skipping scripts breaks Prisma Client generation, setup tasks, and other critical postinstall hooks
+- Skipping scripts breaks setup tasks and critical postinstall hooks
 - Legacy peer deps hide real compatibility issues that should be resolved via version alignment or overrides
 
 ## When Dependencies Fail
 
 - Resolve peer conflicts by aligning versions or using `overrides` in root `package.json`
-- Fix Prisma/engine issues by ensuring correct dependency order and explicit `@prisma/engines` if needed

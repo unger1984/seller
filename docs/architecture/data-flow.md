@@ -4,11 +4,11 @@
 flowchart TB
     subgraph Import
         A[Marketplace API] -->|Каталог| B[Import Job]
-        B --> C[MatchCandidate / Listing]
+        B --> C[Product/Variant + ProductOzon/ProductWb]
     end
 
     subgraph Master
-        D[Product/Variant] <--> E[Listing]
+        D[Product/Variant] <--> E[ProductOzon/ProductWb]
     end
 
     subgraph Publish

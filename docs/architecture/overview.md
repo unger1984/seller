@@ -5,8 +5,7 @@
 - **Auth** — регистрация, вход, JWT, active company
 - **Company** — тенанты, CompanyMember (many-to-many)
 - **MarketAccount** — подключённые аккаунты Ozon/WB, credentials
-- **Product/Variant/Listing** — master-каталог и привязки к площадкам
-- **Matching** — сопоставление импортированных товаров с вариантами
+- **Product/Variant** — master-каталог; привязки к площадкам через ProductOzon/ProductWb
 - **Sync** — импорт, публикация, обновление остатков (BullMQ worker)
 
 ## Модули (NestJS)
@@ -14,20 +13,18 @@
 - AuthModule
 - CompanyModule
 - MarketAccountModule
-- ProductModule (Product + Variant + VariantBarcode)
-- ListingModule
-- MatchingModule
+- ProductModule (Product, Variant, VariantBarcode, ProductOzon, ProductWb)
 - SyncModule
 
 ## API Structure (apps/api/src)
 
-- **modules/** — bounded context modules (Auth, Company, MarketAccount, Product, Listing, Matching, Sync)
-- **shared/** — config, logger, prisma, guards, common
+- **modules/** — bounded context modules (Auth, Company, MarketAccount, Product, Sync)
+- **shared/** — config, logger, typeorm, guards, common
 
 ## Диаграмма (упрощённая)
 
 ```
-[Web] → [API] → [Prisma] → [PostgreSQL]
+[Web] → [API] → [TypeORM] → [PostgreSQL]
                 ↓
          [BullMQ] → [Worker] → [Ozon/WB API]
 ```

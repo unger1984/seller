@@ -4,7 +4,7 @@ SaaS для управления товарами на Ozon и Wildberries. Mult
 
 ## AI Workflow
 
-- **Перед изменениями:** читать `.cursor/rules/` — правила для API, Prisma, frontend, tenancy
+- **Перед изменениями:** читать `.cursor/rules/` — правила для API, TypeORM, frontend, tenancy
 - Учитывать ESLint и Prettier; pre-commit запускает lint-staged (ESLint --fix, Prettier) — см. `.cursor/rules/pre-commit-lint-staged.mdc`
 - Давать конкретные решения для проекта
 - Отвечать на русском

@@ -38,7 +38,7 @@ npm run dev:worker
 - `apps/api` — NestJS API, Swagger `/api/docs`
 - `apps/web` — React + Vite + FSD
 - `apps/worker-import`, `worker-publish`, `worker-sync-stock` — BullMQ workers (SRP: одна очередь — один образ)
-- `packages/` — domain, shared-types, prisma-client, api-contracts, shared
+- `packages/` — domain, shared-types, typeorm, api-contracts, shared
 
 ## Команды
 
@@ -48,8 +48,8 @@ npm run dev:worker
 | `npm run dev:api` | API в dev-режиме |
 | `npm run dev:web` | Web в dev-режиме |
 | `npm run dev:worker` | Worker |
-| `npm run db:migrate` | Prisma миграции |
-| `npm run db:studio` | Prisma Studio |
+| `npm run db:migrate` | TypeORM миграции |
+| `npm run db:studio` | Просмотр БД (psql/DBeaver) |
 | `npm run test` | Vitest |
 | `npm run lint` | ESLint |
 | `npm run format` | Prettier |

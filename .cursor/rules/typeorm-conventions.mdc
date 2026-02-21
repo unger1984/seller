@@ -1,0 +1,23 @@
+---
+description: TypeORM conventions — snake_case, transactions, COMMENTs
+globs: "packages/typeorm/**/*.ts"
+alwaysApply: false
+---
+
+# TypeORM Conventions
+
+## Naming
+
+- All columns use `snake_case` via `name` in `@Column({ name: 'snake_case' })`
+- Tables: `@Entity('snake_case_table_name')`
+- Enum types in migrations: `COMMENT ON TYPE "EnumName"` (Russian comments)
+
+## Transactions
+
+- Use `queryRunner` in migrations; in services: `manager.transaction()` for atomic ops
+- Variant/VariantBarcode: derive `companyId` from relation — never from request body
+
+## Migrations
+
+- Add `COMMENT ON TABLE` and `COMMENT ON COLUMN` in migrations (Russian comments)
+- Enum values = API contract; change only via migration + changelog

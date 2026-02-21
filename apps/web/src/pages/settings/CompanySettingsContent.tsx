@@ -86,7 +86,6 @@ function AccountForm({
   const [submitting, setSubmitting] = useState(false);
   const [clientId, setClientId] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [name, setName] = useState(MARKETPLACE_LABELS[marketplace]);
 
   const isEdit = !!account;
   const isOzon = marketplace === 'OZON';
@@ -118,6 +117,7 @@ function AccountForm({
         }
         toastSuccess('Данные обновлены');
       } else {
+        const name = MARKETPLACE_LABELS[marketplace];
         const body = isOzon
           ? { marketplace: 'OZON', name, credentials: { clientId, apiKey } }
           : { marketplace: 'WILDBERRIES', name, credentials: { apiKey } };
@@ -151,14 +151,6 @@ function AccountForm({
         <h3 className="font-medium text-gray-900">
           {isEdit ? 'Изменить' : 'Подключить'} {MARKETPLACE_LABELS[marketplace]}
         </h3>
-        {!isEdit && (
-          <Input
-            label="Название"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        )}
         {isOzon && (
           <Input
             label="Client-ID"

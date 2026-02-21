@@ -52,10 +52,10 @@ export function ProductsPage() {
                 <Button
                   variant="secondary"
                   onClick={() => handleImport('WILDBERRIES')}
-                  aria-label="Скачать с ВБ"
+                  aria-label="Скачать с WB"
                 >
                   <Download className="size-4" aria-hidden />
-                  Скачать с ВБ
+                  Скачать с WB
                 </Button>
               );
             })()}
@@ -77,10 +77,10 @@ export function ProductsPage() {
                 <Button
                   variant="secondary"
                   onClick={() => handleImport('OZON')}
-                  aria-label="Скачать с Озон"
+                  aria-label="Скачать с OZON"
                 >
                   <Download className="size-4" aria-hidden />
-                  Скачать с Озон
+                  Скачать с OZON
                 </Button>
               );
             })()}

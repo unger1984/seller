@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Download,
-  Package,
-  Plus,
-  Search,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { Download, Package, Plus, Search, Trash2 } from 'lucide-react';
 import { Button, Card, Input } from '@/shared/ui';
 import { useProductsPage } from '@/features/products/hooks/useProductsPage';
 import { formatPlacementStatus } from '@/features/products/lib/format';
@@ -16,6 +10,8 @@ export function ProductsPage() {
     accounts,
     products,
     total,
+    page,
+    limit,
     setPage,
     search,
     setSearch,
@@ -26,100 +22,119 @@ export function ProductsPage() {
     hasOzon,
     hasWb,
     handleImport,
+    handleClearCatalog,
     handleCreateProduct,
   } = useProductsPage();
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-gray-900">Список товаров</h1>
-        <div className="flex flex-wrap gap-2">
-          {hasWb &&
-            (() => {
-              const wbId = accounts.find(
-                (a) => a.marketplace === 'WILDBERRIES'
-              )?.id;
-              const wbImporting = wbId ? importStatus[wbId]?.active : false;
-              return wbImporting ? (
-                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
-                  <span
-                    className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
-                    aria-hidden
-                  />
-                  Скачивание с ВБ...
-                </div>
-              ) : (
-                <Button
-                  variant="secondary"
-                  onClick={() => handleImport('WILDBERRIES')}
-                  aria-label="Скачать с WB"
-                >
-                  <Download className="size-4" aria-hidden />
-                  Скачать с WB
-                </Button>
-              );
-            })()}
-          {hasOzon &&
-            (() => {
-              const ozonId = accounts.find((a) => a.marketplace === 'OZON')?.id;
-              const ozonImporting = ozonId
-                ? importStatus[ozonId]?.active
-                : false;
-              return ozonImporting ? (
-                <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
-                  <span
-                    className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
-                    aria-hidden
-                  />
-                  Скачивание с Озон...
-                </div>
-              ) : (
-                <Button
-                  variant="secondary"
-                  onClick={() => handleImport('OZON')}
-                  aria-label="Скачать с OZON"
-                >
-                  <Download className="size-4" aria-hidden />
-                  Скачать с OZON
-                </Button>
-              );
-            })()}
-          <Button
-            variant="primary"
-            onClick={() => setAddModalOpen(true)}
-            aria-label="Добавить товар"
-          >
-            <Plus className="size-4" aria-hidden />
-            Добавить
-          </Button>
+    <div className="space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Список товаров
+          </h1>
+          <div className="flex flex-wrap gap-2">
+            {hasWb &&
+              (() => {
+                const wbId = accounts.find(
+                  (a) => a.marketplace === 'WILDBERRIES'
+                )?.id;
+                const wbImporting = wbId ? importStatus[wbId]?.active : false;
+                return wbImporting ? (
+                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
+                    <span
+                      className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                      aria-hidden
+                    />
+                    Скачивание с ВБ...
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleImport('WILDBERRIES')}
+                    aria-label="Скачать с WB"
+                  >
+                    <Download className="size-4" aria-hidden />
+                    Скачать с WB
+                  </Button>
+                );
+              })()}
+            {hasOzon &&
+              (() => {
+                const ozonId = accounts.find(
+                  (a) => a.marketplace === 'OZON'
+                )?.id;
+                const ozonImporting = ozonId
+                  ? importStatus[ozonId]?.active
+                  : false;
+                return ozonImporting ? (
+                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600">
+                    <span
+                      className="inline-block size-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                      aria-hidden
+                    />
+                    Скачивание с Озон...
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleImport('OZON')}
+                    aria-label="Скачать с OZON"
+                  >
+                    <Download className="size-4" aria-hidden />
+                    Скачать с OZON
+                  </Button>
+                );
+              })()}
+            <Button
+              variant="primary"
+              onClick={() => setAddModalOpen(true)}
+              aria-label="Добавить товар"
+            >
+              <Plus className="size-4" aria-hidden />
+              Добавить
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleClearCatalog}
+              aria-label="Очистить каталог"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Очистить
+            </Button>
+          </div>
         </div>
+
+        <Card className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col gap-1 flex-1">
+              <label
+                htmlFor="products-search"
+                className="text-sm font-medium text-gray-700"
+              >
+                Поиск
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none"
+                  aria-hidden
+                />
+                <input
+                  id="products-search"
+                  type="search"
+                  placeholder="По названию, артикулу, SKU, штрихкоду"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && setPage(1)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
-              aria-hidden
-            />
-            <Input
-              type="search"
-              label="Поиск"
-              placeholder="По названию, артикулу, SKU, штрихкоду"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && setPage(1)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="ghost" aria-label="Фильтры">
-            <SlidersHorizontal className="size-4" aria-hidden />
-            Фильтры
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden -mx-6 lg:-mx-8 rounded-none">
         {loading ? (
           <div className="p-8 text-center text-gray-500">Загрузка...</div>
         ) : products.length === 0 ? (
@@ -222,24 +237,34 @@ export function ProductsPage() {
                           {hasOzon && (
                             <>
                               <td className="px-4 py-3 text-right text-gray-600">
-                                {v.priceOzon != null
-                                  ? v.priceOzon.toLocaleString('ru-RU')
-                                  : v.masterPrice.toLocaleString('ru-RU')}
+                                {v.ozonProductId != null ||
+                                v.ozonOfferId != null
+                                  ? (
+                                      v.priceOzon ?? v.masterPrice
+                                    ).toLocaleString('ru-RU')
+                                  : '—'}
                               </td>
                               <td className="px-4 py-3 text-right text-gray-600">
-                                {v.stockOzon ?? v.masterStock}
+                                {v.ozonProductId != null ||
+                                v.ozonOfferId != null
+                                  ? (v.stockOzon ?? v.masterStock)
+                                  : '—'}
                               </td>
                             </>
                           )}
                           {hasWb && (
                             <>
                               <td className="px-4 py-3 text-right text-gray-600">
-                                {v.priceWb != null
-                                  ? v.priceWb.toLocaleString('ru-RU')
-                                  : v.masterPrice.toLocaleString('ru-RU')}
+                                {v.wbNmId != null
+                                  ? (v.priceWb ?? v.masterPrice).toLocaleString(
+                                      'ru-RU'
+                                    )
+                                  : '—'}
                               </td>
                               <td className="px-4 py-3 text-right text-gray-600">
-                                {v.stockWb ?? v.masterStock}
+                                {v.wbNmId != null
+                                  ? (v.stockWb ?? v.masterStock)
+                                  : '—'}
                               </td>
                             </>
                           )}
@@ -305,8 +330,36 @@ export function ProductsPage() {
           </div>
         )}
         {total > 0 && (
-          <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
-            Всего: {total}
+          <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
+            <span>
+              Показано {(page - 1) * limit + 1}–{Math.min(page * limit, total)}{' '}
+              из {total}
+            </span>
+            {total > limit && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  aria-label="Предыдущая страница"
+                >
+                  Назад
+                </Button>
+                <span className="text-gray-600">
+                  Страница {page} из {Math.ceil(total / limit)}
+                </span>
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    setPage((p) => Math.min(Math.ceil(total / limit), p + 1))
+                  }
+                  disabled={page >= Math.ceil(total / limit)}
+                  aria-label="Следующая страница"
+                >
+                  Вперёд
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Card>

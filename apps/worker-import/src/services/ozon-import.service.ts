@@ -259,6 +259,23 @@ export class OzonImportService {
       relations: { product: true },
     });
 
+    const vendorCodeTrimmed = item.offer_id.trim();
+
+    /** Поиск Product по vendorCode с ProductWb для объединения Ozon+WB */
+    let productToMerge: Product | null = null;
+    if (!existing) {
+      const found = await this.productRepo
+        .createQueryBuilder('p')
+        .innerJoin('p.productWb', 'wb')
+        .where('p.companyId = :companyId', { companyId })
+        .andWhere('p.vendorCode = :vendorCode', {
+          vendorCode: vendorCodeTrimmed,
+        })
+        .limit(1)
+        .getOne();
+      if (found) productToMerge = found;
+    }
+
     const productData = {
       name,
       brand: undefined as string | undefined,
@@ -324,12 +341,22 @@ export class OzonImportService {
       return 'updated';
     }
 
+    const productIdForCreate = productToMerge?.id ?? null;
+
     await this.dataSource.transaction(async (tx) => {
-      const product = tx.getRepository(Product).create({
-        companyId,
-        ...productData,
-      });
-      await tx.getRepository(Product).save(product);
+      let product: Product;
+      if (productIdForCreate) {
+        await tx.getRepository(Product).update(productIdForCreate, productData);
+        product = await tx.getRepository(Product).findOneOrFail({
+          where: { id: productIdForCreate },
+        });
+      } else {
+        product = tx.getRepository(Product).create({
+          companyId,
+          ...productData,
+        });
+        await tx.getRepository(Product).save(product);
+      }
       const ozonRepo = tx.getRepository(ProductOzon);
       const ozon = ozonRepo.create({
         productId: product.id,
@@ -337,6 +364,12 @@ export class OzonImportService {
         ...ozonData,
       } as Partial<ProductOzon>);
       await ozonRepo.save(ozon);
+      if (productToMerge) {
+        this.log.i('Объединение карточки Ozon с существующим Product с WB', {
+          vendorCode: vendorCodeTrimmed,
+          productId: product.id,
+        });
+      }
     });
     return 'created';
   }

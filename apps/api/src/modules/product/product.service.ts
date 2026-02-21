@@ -6,13 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  Product,
-  Variant,
-  VariantBarcode,
-  ProductOzon,
-  ProductWb,
-} from '@seller/typeorm';
+import { createLogger } from '@seller/shared';
+import { Product, Variant, VariantBarcode } from '@seller/typeorm';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -24,6 +19,8 @@ import type {
 
 @Injectable()
 export class ProductService {
+  private readonly log = createLogger(ProductService.name);
+
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -40,24 +37,47 @@ export class ProductService {
     let productIds: string[] | null = null;
     if (search) {
       const s = search.trim();
+      const searchPattern = `%${s}%`;
       const subQb = this.productRepo
         .createQueryBuilder('p')
         .leftJoin('p.variants', 'v')
         .leftJoin('v.barcodes', 'b')
-        .select('p.id')
+        .leftJoin('p.productOzon', 'ozon')
+        .leftJoin('p.productWb', 'wb')
+        .select('p.id AS product_id')
         .where('p.companyId = :companyId', { companyId })
         .andWhere(
-          `(p.name ILIKE :search OR p.vendorCode ILIKE :search OR v.vendorCode ILIKE :search OR b.barcode = :s)`,
-          { search: `%${s}%`, s }
+          `(
+            "p"."name" ILIKE :searchPattern OR
+            "p"."vendor_code" ILIKE :searchPattern OR
+            "v"."vendor_code" ILIKE :searchPattern OR
+            "b"."barcode" = :s OR
+            "ozon"."offer_id" ILIKE :searchPattern OR
+            CAST("ozon"."ozon_product_id" AS TEXT) ILIKE :searchPattern OR
+            "wb"."vendor_code" ILIKE :searchPattern OR
+            CAST("wb"."nm_id" AS TEXT) ILIKE :searchPattern
+          )`,
+          { searchPattern, s }
         )
         .distinct(true);
       if (brand) subQb.andWhere('p.brand = :brand', { brand });
-      const rows = await subQb.getRawMany<{ id: string }>();
-      productIds = rows.map((r) => r.id);
+      const rows = await subQb.getRawMany<{ product_id: string }>();
+      productIds = rows.map((r) => r.product_id);
       if (productIds.length === 0) {
         return { items: [], total: 0, page, limit };
       }
     }
+
+    const countQb = this.productRepo
+      .createQueryBuilder('p')
+      .where('p.companyId = :companyId', { companyId });
+    if (productIds) {
+      countQb.andWhere('p.id IN (:...ids)', { ids: productIds });
+    }
+    if (brand) {
+      countQb.andWhere('p.brand = :brand', { brand });
+    }
+    const total = await countQb.getCount();
 
     const qb = this.productRepo
       .createQueryBuilder('p')
@@ -65,6 +85,33 @@ export class ProductService {
       .leftJoinAndSelect('v.barcodes', 'b')
       .leftJoinAndSelect('p.productOzon', 'ozon')
       .leftJoinAndSelect('p.productWb', 'wb')
+      .select([
+        'p.id',
+        'p.name',
+        'p.brand',
+        'p.description',
+        'p.vendorCode',
+        'p.attributes',
+        'p.updatedAt',
+        'v.id',
+        'v.productId',
+        'v.vendorCode',
+        'v.masterPrice',
+        'v.masterStock',
+        'b.id',
+        'b.variantId',
+        'b.barcode',
+        'ozon.id',
+        'ozon.offerId',
+        'ozon.ozonProductId',
+        'ozon.price',
+        'ozon.stockPresent',
+        'ozon.primaryImage',
+        'wb.id',
+        'wb.nmId',
+        'wb.vendorCode',
+        'wb.primaryPhoto',
+      ])
       .where('p.companyId = :companyId', { companyId });
 
     if (productIds) {
@@ -75,7 +122,6 @@ export class ProductService {
     }
 
     qb.orderBy('p.updatedAt', 'DESC');
-    const total = await qb.getCount();
     qb.skip((page - 1) * limit);
     qb.take(limit);
     const items = await qb.getMany();
@@ -310,6 +356,14 @@ export class ProductService {
     });
     await this.barcodeRepo.save(vb);
     return vb;
+  }
+
+  /** Очистить каталог: удалить все товары компании (только в БД, не на маркетах) */
+  async clearCatalog(companyId: string): Promise<{ deleted: number }> {
+    const result = await this.productRepo.delete({ companyId });
+    const deleted = result.affected ?? 0;
+    this.log.i('Каталог очищен', { companyId, deleted });
+    return { deleted };
   }
 
   /** Удалить штрихкод */

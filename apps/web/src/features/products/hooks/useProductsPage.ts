@@ -12,6 +12,8 @@ interface ProductsResponse {
   limit: number;
 }
 
+const PRODUCTS_LIMIT = 50;
+
 export function useProductsPage() {
   const companyId = useAuthStore((s) => s.user?.activeCompanyId);
   const token = useAuthStore((s) => s.token);
@@ -32,7 +34,7 @@ export function useProductsPage() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: '20',
+        limit: String(PRODUCTS_LIMIT),
       });
       if (search.trim()) params.set('search', search.trim());
       const res = await apiFetch(`/companies/${companyId}/products?${params}`, {
@@ -51,8 +53,8 @@ export function useProductsPage() {
   }, [companyId, token, page, search]);
 
   const { importStatus, setImporting: setImportStatus } = useSyncImportStatus(
-    companyId,
-    token,
+    companyId ?? null,
+    token ?? null,
     { onImportDone: fetchProducts }
   );
 
@@ -117,6 +119,34 @@ export function useProductsPage() {
     [companyId, token, ozonAccount, wbAccount, setImportStatus]
   );
 
+  const handleClearCatalog = useCallback(async () => {
+    if (!companyId || !token) return;
+    if (
+      !window.confirm(
+        'Удалить все товары из каталога? Данные на маркетплейсах не изменятся. Это действие нельзя отменить.'
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await apiFetch(`/companies/${companyId}/products/clear`, {
+        method: 'POST',
+        token,
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(err.message ?? 'Ошибка очистки');
+      }
+      const data = (await res.json()) as { deleted: number };
+      toastSuccess(`Удалено товаров: ${data.deleted}`);
+      fetchProducts();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'Ошибка очистки');
+    }
+  }, [companyId, token, fetchProducts]);
+
   const handleCreateProduct = useCallback(
     async (name: string, brand?: string) => {
       if (!companyId || !token) return;
@@ -151,6 +181,7 @@ export function useProductsPage() {
     products,
     total,
     page,
+    limit: PRODUCTS_LIMIT,
     setPage,
     search,
     setSearch,
@@ -161,6 +192,7 @@ export function useProductsPage() {
     hasOzon,
     hasWb,
     handleImport,
+    handleClearCatalog,
     handleCreateProduct,
   };
 }

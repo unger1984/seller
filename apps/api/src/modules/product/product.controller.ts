@@ -69,6 +69,21 @@ export class ProductController {
     return this.service.list(companyId, parsed as ProductListQuery);
   }
 
+  @Post('clear')
+  @ApiOperation({
+    summary: 'Очистить каталог',
+    description:
+      'Удаляет все товары компании из БД. Не затрагивает данные на маркетплейсах.',
+  })
+  async clearCatalog(
+    @Param('companyId') _companyId: string,
+    @Req() req: Request & { user?: JwtUser }
+  ) {
+    const companyId = req.user?.activeCompanyId;
+    if (!companyId) throw new Error('Active company not set');
+    return this.service.clearCatalog(companyId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Создать продукт' })
   @ApiBody({ type: CreateProductDto })

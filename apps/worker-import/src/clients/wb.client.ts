@@ -3,11 +3,13 @@
  * POST /content/v2/get/cards/list
  * Документация: dev.wildberries.ru/docs/openapi/work-with-products
  */
+import axios, { AxiosError } from 'axios';
 import { createLogger } from '@seller/shared';
 
 const log = createLogger('WbClient');
 
 const BASE = 'https://content-api.wildberries.ru';
+const REQUEST_TIMEOUT_MS = 60_000;
 
 export type WbCredentials = { apiKey: string };
 
@@ -76,10 +78,23 @@ type WbCardsListRequest = {
   };
 };
 
+function createWbAxios(creds: WbCredentials) {
+  return axios.create({
+    baseURL: BASE,
+    timeout: REQUEST_TIMEOUT_MS,
+    headers: {
+      Authorization: `${creds.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 /** Загрузить карточки с пагинацией. Возвращает полные объекты карточек. */
 export async function fetchWbCardsList(
   creds: WbCredentials
 ): Promise<WbCard[]> {
+  const client = createWbAxios(creds);
+  const url = '/content/v2/get/cards/list';
   const all: WbCard[] = [];
   let cursor: WbCardsListResponse['cursor'] | undefined;
 
@@ -90,36 +105,44 @@ export async function fetchWbCardsList(
         cursor: cursor
           ? { limit: 100, updatedAt: cursor.updatedAt, nmID: cursor.nmID }
           : { limit: 100 },
+        filter: {
+          withPhoto: -1,
+        },
       },
     };
 
-    const res = await fetch(`${BASE}/content/v2/get/cards/list`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${creds.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await client.post<WbCardsListResponse>(url, body);
+      const data = res.data;
+      const cards = data.cards ?? [];
+      all.push(...cards);
+      cursor = data.cursor;
 
-    if (!res.ok) {
-      const text = await res.text();
-      log.e('WB cards/list failed', { status: res.status, body: text });
-      throw new Error(`WB API: ${res.status} ${text.slice(0, 200)}`);
+      log.i('WB cards/list page', {
+        pageCards: cards.length,
+        accumulated: all.length,
+        hasMore: !!cursor && cards.length >= (cursor.limit ?? 100),
+      });
+
+      if (cards.length < (cursor?.limit ?? 100)) break;
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        const status = err.response?.status;
+        const data = err.response?.data;
+        log.e('WB API cards/list error', {
+          url: `${BASE}${url}`,
+          status,
+          responseData:
+            typeof data === 'object'
+              ? JSON.stringify(data).slice(0, 500)
+              : String(data),
+        });
+        throw new Error(
+          `WB API: ${status ?? 'network'} ${err.message} ${JSON.stringify(data ?? {}).slice(0, 200)}`
+        );
+      }
+      throw err;
     }
-
-    const data = (await res.json()) as WbCardsListResponse;
-    const cards = data.cards ?? [];
-    all.push(...cards);
-    cursor = data.cursor;
-
-    log.i('WB cards/list page', {
-      pageCards: cards.length,
-      accumulated: all.length,
-      hasMore: !!cursor && cards.length >= (cursor.limit ?? 100),
-    });
-
-    if (cards.length < (cursor?.limit ?? 100)) break;
   } while (cursor);
 
   log.i('WB cards/list done', { total: all.length });

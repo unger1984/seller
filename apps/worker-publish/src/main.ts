@@ -9,16 +9,10 @@ loadEnv({ path: process.env.APP_ENV === 'stage' ? '.env.stage' : '.env' });
 import { NestFactory } from '@nestjs/core';
 import { getQueueToken } from '@nestjs/bullmq';
 import { createLogger } from '@seller/shared';
-import {
-  createBullQueueMetrics,
-  startMetricsServer,
-} from '@seller/worker-metrics';
 import { QUEUE_NAMES } from '@seller/domain';
 import { WorkerPublishModule } from './worker-publish.module.js';
 
 const log = createLogger('WorkerPublish');
-
-const METRICS_PORT = parseInt(process.env.METRICS_PORT ?? '9091', 10);
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerPublishModule, {
@@ -26,11 +20,9 @@ async function bootstrap() {
   });
   await app.init();
 
-  const queue = app.get(getQueueToken(QUEUE_NAMES.PUBLISH_LISTING));
-  const register = createBullQueueMetrics(queue, 'publish');
-  startMetricsServer(METRICS_PORT, register);
+  app.get(getQueueToken(QUEUE_NAMES.PUBLISH_LISTING));
 
-  log.i('Started, queue=publish-listing, metrics=/metrics');
+  log.i('Started, queue=publish-listing');
 }
 
 bootstrap().catch((err) => {

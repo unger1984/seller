@@ -1,9 +1,15 @@
 ---
-description: Architectural principles — SOLID, KISS, DRY
+description: Architectural principles — SOLID, KISS, DRY, YAGNI
 alwaysApply: true
 ---
 
-# Architecture — SOLID, KISS, DRY
+# Architecture — SOLID, KISS, DRY, YAGNI
+
+## YAGNI
+
+- **You Aren't Gonna Need It** — the best code is the code you don't write.
+- Don't implement features that aren't requested. Avoid speculative abstractions and «nice to have» additions until there's a real requirement.
+- When in doubt — leave it out.
 
 ## SOLID
 

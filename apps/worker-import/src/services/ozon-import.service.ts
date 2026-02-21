@@ -1,6 +1,7 @@
 /**
  * Импорт каталога Ozon → Product + ProductOzon.
- * Алгоритм по плану 16: v3/list → v3/info/list (batch 1000) → v4/attributes → v1/description.
+ * Две фазы: (1) list → info/list → attributes → upsert без description;
+ * (2) syncDescriptions для товаров без описания.
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,17 +9,14 @@ import { DataSource, Repository } from 'typeorm';
 import { createLogger } from '@seller/shared';
 import { Product, ProductOzon } from '@seller/typeorm';
 import {
-  fetchOzonProductList,
-  fetchOzonProductInfo,
-  fetchOzonProductAttributesAll,
-  fetchOzonProductDescription,
+  OzonApiClient,
   type OzonCredentials,
   type OzonProductItem,
   type OzonProductInfo,
   type OzonProductAttributes,
 } from '../clients/ozon.client.js';
 
-const OZON_INFO_BATCH = 1000;
+const ATTRIBUTES_BATCH_SIZE = 1000;
 
 /** Ozon API может вернуть URL как string или как object { "https://...": "" } */
 function extractImageUrl(
@@ -40,7 +38,6 @@ function normalizeImageUrls(arr: unknown[]): string[] {
     .map((v) => extractImageUrl(v as string | Record<string, unknown>))
     .filter((u): u is string => u != null);
 }
-const OZON_DESCRIPTION_DELAY_MS = 100;
 
 @Injectable()
 export class OzonImportService {
@@ -59,30 +56,34 @@ export class OzonImportService {
     marketAccountId: string,
     creds: OzonCredentials
   ): Promise<{ created: number; updated: number }> {
+    const startTime = performance.now();
+    const client = new OzonApiClient(creds);
+
     this.log.i('Начало импорта Ozon', { marketAccountId });
 
-    const listItems = await fetchOzonProductList(creds);
+    const phase1Start = performance.now();
+    const listItems = await client.getProductList();
     if (listItems.length === 0) {
       this.log.i('Список товаров Ozon пуст', { marketAccountId });
       return { created: 0, updated: 0 };
     }
 
-    this.log.i('Загрузка info/list батчами', {
+    this.log.i('Фаза 1: загрузка info/list', {
       marketAccountId,
       total: listItems.length,
-      batchSize: OZON_INFO_BATCH,
     });
-    const infoMap = await this.fetchInfoMap(creds, listItems);
+    const infoMap = await this.fetchInfoMap(client, listItems);
 
-    this.log.i('Загрузка attributes батчами', { marketAccountId });
+    this.log.i('Фаза 1: загрузка attributes', { marketAccountId });
     const attrsMap = await this.fetchAttributesMap(
-      creds,
+      client,
       listItems,
       marketAccountId
     );
 
     let created = 0;
     let updated = 0;
+    const offerIdsProcessed: string[] = [];
 
     for (let i = 0; i < listItems.length; i++) {
       const item = listItems[i];
@@ -92,31 +93,17 @@ export class OzonImportService {
         this.fallbackInfo(item);
       const attrs = attrsMap.get(item.product_id);
 
-      let description = '';
-      let name = '';
-      try {
-        await new Promise((r) => setTimeout(r, OZON_DESCRIPTION_DELAY_MS));
-        const dat = await fetchOzonProductDescription(
-          creds,
-          item.product_id,
-          false
-        );
-        description = dat?.description ?? '';
-        name = dat?.name ?? '';
-      } catch {
-        // Игнорируем ошибки description
-      }
-
       const result = await this.upsertItem(
         companyId,
         marketAccountId,
         item,
         info,
         attrs,
-        description
+        null
       );
       if (result === 'created') created += 1;
       else if (result === 'updated') updated += 1;
+      offerIdsProcessed.push(item.offer_id);
 
       if ((i + 1) % 50 === 0) {
         this.log.i('Прогресс импорта Ozon', {
@@ -127,39 +114,51 @@ export class OzonImportService {
       }
     }
 
+    const phase1Duration = performance.now() - phase1Start;
+    this.log.i('Фаза 1 завершена', {
+      marketAccountId,
+      durationMs: Math.round(phase1Duration),
+      apiRequests: client.apiRequestCount,
+      retryCount: client.retryCount,
+      created,
+      updated,
+    });
+
+    const phase2Start = performance.now();
+    await this.syncDescriptions(client, marketAccountId, offerIdsProcessed);
+    const phase2Duration = performance.now() - phase2Start;
+
+    const totalDuration = performance.now() - startTime;
     this.log.i('Импорт Ozon завершён', {
       marketAccountId,
       created,
       updated,
       total: listItems.length,
+      phase1Ms: Math.round(phase1Duration),
+      phase2Ms: Math.round(phase2Duration),
+      totalMs: Math.round(totalDuration),
+      apiRequests: client.apiRequestCount,
+      retryCount: client.retryCount,
     });
     return { created, updated };
   }
 
   private async fetchInfoMap(
-    creds: OzonCredentials,
+    client: OzonApiClient,
     listItems: OzonProductItem[]
   ): Promise<Map<string, OzonProductInfo>> {
     const productIds = listItems.map((i) => i.product_id);
+    const infos = await client.getProductInfo(productIds);
     const map = new Map<string, OzonProductInfo>();
-
-    for (let i = 0; i < productIds.length; i += OZON_INFO_BATCH) {
-      const batch = productIds.slice(i, i + OZON_INFO_BATCH);
-      const infos = await fetchOzonProductInfo(creds, batch);
-      for (const info of infos) {
-        map.set(String(info.id), info);
-        map.set(info.offer_id, info);
-      }
-      this.log.d('Ozon info batch', {
-        batchIndex: Math.floor(i / OZON_INFO_BATCH),
-        count: infos.length,
-      });
+    for (const info of infos) {
+      map.set(String(info.id), info);
+      map.set(info.offer_id, info);
     }
     return map;
   }
 
   private async fetchAttributesMap(
-    creds: OzonCredentials,
+    client: OzonApiClient,
     listItems: OzonProductItem[],
     marketAccountId: string
   ): Promise<Map<string, OzonProductAttributes>> {
@@ -167,16 +166,17 @@ export class OzonImportService {
     const map = new Map<string, OzonProductAttributes>();
 
     try {
-      for (let i = 0; i < productIds.length; i += OZON_INFO_BATCH) {
-        const batch = productIds.slice(i, i + OZON_INFO_BATCH);
-        const attrs = await fetchOzonProductAttributesAll(creds, {
+      for (let i = 0; i < productIds.length; i += ATTRIBUTES_BATCH_SIZE) {
+        const batch = productIds.slice(i, i + ATTRIBUTES_BATCH_SIZE);
+        const attrs = await client.getProductAttributesAll({
           product_id: batch,
         });
         for (const a of attrs) {
           map.set(String(a.id), a);
         }
         this.log.d('Ozon attributes batch', {
-          batchIndex: Math.floor(i / OZON_INFO_BATCH),
+          batchIndex: Math.floor(i / ATTRIBUTES_BATCH_SIZE),
+          batchSize: batch.length,
           count: attrs.length,
         });
       }
@@ -203,13 +203,72 @@ export class OzonImportService {
     };
   }
 
+  /**
+   * Синхронизация описаний только для товаров: новых или без description в БД.
+   * Не блокирует основной импорт.
+   */
+  private async syncDescriptions(
+    client: OzonApiClient,
+    marketAccountId: string,
+    offerIds: string[]
+  ): Promise<void> {
+    const needDescription = await this.productOzonRepo
+      .createQueryBuilder('po')
+      .select(['po.id', 'po.offerId', 'po.ozonProductId', 'po.productId'])
+      .where('po.marketAccountId = :marketAccountId', { marketAccountId })
+      .andWhere('po.offerId IN (:...offerIds)', { offerIds })
+      .andWhere('(po.description IS NULL OR po.description = :empty)', {
+        empty: '',
+      })
+      .getMany();
+
+    if (needDescription.length === 0) {
+      this.log.i('Фаза 2: описания не требуются', { marketAccountId });
+      return;
+    }
+
+    this.log.i('Фаза 2: загрузка descriptions', {
+      marketAccountId,
+      count: needDescription.length,
+    });
+
+    let synced = 0;
+    for (const po of needDescription) {
+      try {
+        const dat = await client.getProductDescription(po.ozonProductId, false);
+        if (dat?.description) {
+          await this.dataSource.transaction(async (tx) => {
+            await tx
+              .getRepository(ProductOzon)
+              .update({ id: po.id }, { description: dat.description });
+            await tx
+              .getRepository(Product)
+              .update({ id: po.productId }, { description: dat.description });
+          });
+          synced += 1;
+        }
+      } catch {
+        this.log.w('Не удалось загрузить description', {
+          offerId: po.offerId,
+          ozonProductId: po.ozonProductId,
+        });
+      }
+    }
+
+    this.log.i('Фаза 2: descriptions обновлены', {
+      marketAccountId,
+      synced,
+      total: needDescription.length,
+    });
+  }
+
   private async upsertItem(
     companyId: string,
     marketAccountId: string,
     item: OzonProductItem,
     info: OzonProductInfo,
     attrs: OzonProductAttributes | undefined,
-    description: string
+    description: string | null
   ): Promise<'created' | 'updated'> {
     const ozonProductId = BigInt(item.product_id);
     const price = parseFloat(info.price ?? '0') || 0;

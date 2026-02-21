@@ -12,7 +12,7 @@ RUN npm ci
 
 ARG WORKER
 # shared, domain — nx:run-commands; email-module — для worker-email; worker — tsc (без @nx/js)
-RUN npx nx run shared:build && npx nx run domain:build && npx nx run worker-metrics:build && \
+RUN npx nx run shared:build && npx nx run domain:build && \
     (if [ "$WORKER" = "email" ]; then npx nx run email-module:build; fi) && \
     npx tsc -p apps/worker-${WORKER}/tsconfig.json
 

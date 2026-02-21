@@ -25,5 +25,4 @@ SaaS для управления товарами на Ozon и Wildberries. Mult
 - [ADR](./docs/architecture/adr/)
 - [Интеграции](./docs/integration/) — Ozon, Wildberries
 - [Runbooks](./docs/runbooks/) — миграции, troubleshooting, deps
-- [Мониторинг stage](./docs/runbooks/stage-monitoring.md) — k9s, stern, Grafana, Loki
-- [Развёртывание мониторинга](./docs/runbooks/monitoring-deploy.md) — kube-prometheus-stack, Loki, Alloy
+- [Stage — k9s и логи](./docs/runbooks/stage-monitoring.md)

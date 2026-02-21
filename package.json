@@ -7,10 +7,10 @@
     "tooling/*"
   ],
   "scripts": {
-    "build": "nx run-many -t build --projects=shared,shared-types,domain,typeorm,email-module,worker-metrics,api,web,worker-import,worker-publish,worker-sync-stock,worker-email",
+    "build": "nx run-many -t build --projects=shared,shared-types,domain,typeorm,email-module,api,web,worker-import,worker-publish,worker-sync-stock,worker-email",
     "build:api": "tsc -p apps/api",
     "build:web": "vite build --config apps/web/vite.config.ts",
-    "build:worker": "nx run-many -t build -p worker-metrics,worker-import,worker-publish,worker-sync-stock,worker-email",
+    "build:worker": "nx run-many -t build -p worker-import,worker-publish,worker-sync-stock,worker-email",
     "docker:worker:import": "docker build -f deploy/Dockerfile.worker --build-arg WORKER=import -t seller/worker-import:latest .",
     "docker:worker:publish": "docker build -f deploy/Dockerfile.worker --build-arg WORKER=publish -t seller/worker-publish:latest .",
     "docker:worker:sync-stock": "docker build -f deploy/Dockerfile.worker --build-arg WORKER=sync-stock -t seller/worker-sync-stock:latest .",
@@ -32,6 +32,7 @@
     "db:migrate": "nx build typeorm && cd packages/typeorm && node ../../node_modules/typeorm/cli.js migration:run -d dist/data-source.js",
     "db:migrate:stage": "dotenv -e .env.stage -- npm run db:migrate",
     "deploy:stage": "./deploy/stage/apply.sh",
+    "deploy:workers:stage": "./tooling/scripts/deploy-workers-stage.sh",
     "db:studio": "echo 'Use psql $DATABASE_URL or DBeaver'",
     "test": "vitest run",
     "test:watch": "vitest",
